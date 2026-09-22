@@ -1,0 +1,13 @@
+{
+  "name": "solar-atlas",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "An interactive 3D solar system with time travel from AD 1000 to 3000.",
+  "scripts": {
+    "start": "node tools/serve.mjs",
+    "test": "node --test tests/orbits.test.mjs",
+    "check": "node --check app.js && node --check orbits.js && node --check tools/serve.mjs"
+  },
+  "engines": { "node": ">=18" }
+}
