@@ -4,11 +4,15 @@ Explore the solar system in 3D, from **AD 1000 to AD 3000**. Follow the eight pl
 
 [**Open Solar Atlas**](https://dcr6174.github.io/solar-atlas/) · [Support the project](https://buymeacoffee.com/dcr6174)
 
-![Solar Atlas social preview, with the Sun and orbiting planets](social-preview.jpg)
-
 ## Screenshots and recording
 
-A desktop and mobile recording will be added after a browser with WebGL2 rendering captures the scene. The image above is promotional artwork, not a screenshot of the app.
+Actual WebGL2 captures from the interactive app, at desktop and mobile sizes:
+
+![Desktop view of Solar Atlas, showing a 3D solar system and time controls](media/desktop.png)
+
+![Mobile view of Solar Atlas, showing the 3D scene and touch-friendly controls](media/mobile.png)
+
+[Watch the short screen recording](media/demo.webm) · [Promotional social preview artwork](social-preview.jpg)
 
 ## Explore
 
