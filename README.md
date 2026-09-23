@@ -6,7 +6,7 @@ Explore the solar system in 3D, from **1000 BCE to 10,000 CE**. Follow the eight
 
 ## Screenshots and recording
 
-Desktop capture from the updated interactive WebGL2 app:
+Desktop capture from the responsive interactive WebGL2 app:
 
 ![Desktop view of Solar Atlas, showing a 3D solar system and time controls](media/desktop.png)
 
@@ -84,3 +84,4 @@ This educational visualization is not a precision ephemeris or eclipse predictor
 - `THIRD_PARTY_NOTICES.md`: texture and dependency attribution.
 
 Code is available under the [MIT License](LICENSE). Three.js r170 and OrbitControls are bundled under MIT. Solar System Scope / INOVE surface textures are licensed under CC BY 4.0; retain their attribution when sharing. See [third-party notices](THIRD_PARTY_NOTICES.md).
+
