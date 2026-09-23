@@ -1,0 +1,31 @@
+name: Capture Solar Atlas demo
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/capture.yml'
+      - 'tools/capture.mjs'
+permissions:
+  contents: write
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install browser
+        run: |
+          npm install --no-save playwright
+          npx playwright install --with-deps chromium
+      - name: Record rendered scene
+        run: node tools/capture.mjs
+      - name: Add captures to repository
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add media/desktop.png media/mobile.png media/demo.webm
+          git commit -m 'Add desktop and mobile screenshots and recorded demo'
+          git push
