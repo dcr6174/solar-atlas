@@ -45,9 +45,36 @@
    <div class="timeline-note"><span id="scale-note">Planet sizes enlarged · Orbit distances compressed</span><button id="model-info">Approximate orbital model <span data-icon="info"></span></button></div>
   </footer>
  </div>
+ <aside id="support-popup" class="support-popup" aria-label="Support Solar Atlas">
+  <button id="support-toggle" class="support-toggle" type="button" aria-expanded="true" aria-controls="support-card">☕ <span>Support this project</span></button>
+  <div id="support-card" class="support-card panel">
+   <button id="support-close" class="support-close" type="button" aria-label="Close support popup">×</button>
+   <span class="eyebrow">ENJOY EXPLORING?</span>
+   <p>Help keep Solar Atlas growing.</p>
+   <a href="https://buymeacoffee.com/dcr6174" target="_blank" rel="noopener noreferrer">Buy me a coffee <span aria-hidden="true">↗</span></a>
+  </div>
+ </aside>
  <dialog id="guide"><div class="dialog-header"><span class="eyebrow">SOLAR ATLAS / FIELD GUIDE</span><button id="close-guide" class="icon-button" aria-label="Close field guide"><span data-icon="close"></span></button></div><h2>A little space to explore.</h2><p>Travel anywhere from <strong>AD 1000 to AD 3000</strong>. Scrub the timeline, enter a precise date, or press play and watch the planets move.</p><div class="guide-grid"><div><h3>Move around</h3><p>Drag to orbit. Scroll or pinch to zoom. Right-drag or use two fingers to pan. Select a planet and choose “Explore up close” to follow it.</p></div><div><h3>Take your time</h3><p><kbd>Space</kbd> Play / pause<br><kbd>←</kbd> <kbd>→</kbd> Step one day<br><kbd>R</kbd> Reset the camera<br><kbd>Esc</kbd> Leave a close-up</p></div></div><h3>About the model</h3><p>Positions are calculated with <a href="https://ssd.jpl.nasa.gov/planets/approx_pos.html" target="_blank" rel="noreferrer">NASA JPL’s long-range Keplerian elements</a>, including corrections for the outer planets. This is an approximate educational model, not a precision ephemeris or eclipse predictor. Earth uses the Earth–Moon barycenter.</p><p>All dates use the proleptic Gregorian calendar, including dates before its introduction. UTC dates approximate the ephemeris timescale. Sizes are enlarged. Compact mode also compresses orbit distances; Proportional mode preserves their ratios. Surface rotation and axial orientations are illustrative.</p><h3>Image credits</h3><p>Planet textures: <a href="https://www.solarsystemscope.com/textures/" target="_blank" rel="noreferrer">Solar System Scope</a> / INOVE, <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noreferrer">CC BY 4.0</a>. Rendered on 3D spheres with lighting; texture colors are enhanced and maps are not historical reconstructions. Rendering: Three.js, MIT license.</p></dialog>
  <div id="toast" role="status"></div>
  <noscript>This solar system needs JavaScript enabled to render the 3D planets and time controls.</noscript>
+ <script>
+  (() => {
+   const toggle = document.getElementById('support-toggle');
+   const card = document.getElementById('support-card');
+   const close = document.getElementById('support-close');
+   const key = 'solar-atlas-support-dismissed';
+   let dismissed = false;
+   try { dismissed = sessionStorage.getItem(key) === '1'; } catch {}
+   function show(open) { card.hidden = !open; toggle.setAttribute('aria-expanded', String(open)); }
+   show(!dismissed);
+   toggle.addEventListener('click', () => show(card.hidden));
+   close.addEventListener('click', () => {
+    show(false);
+    try { sessionStorage.setItem(key, '1'); } catch {}
+    toggle.focus();
+   });
+  })();
+ </script>
  <script type="module" src="./app.js"></script>
 </body>
 </html>
