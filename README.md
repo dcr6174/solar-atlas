@@ -2,6 +2,8 @@
 
 An interactive 3D solar system built with JavaScript and Three.js. Explore all eight planets, follow a world up close, and travel through time from **AD 1000 to AD 3000**.
 
+[View the live Solar Atlas](https://dcr6174.github.io/solar-atlas/) · [Support this project](https://buymeacoffee.com/dcr6174)
+
 ## Features
 
 - Textured 3D planets, a glowing Sun, Saturn's rings, and Earth's atmosphere.
@@ -39,9 +41,7 @@ npm start
 
 ## GitHub Pages
 
-Once GitHub Pages is enabled for this repository, the live site will be available at `https://dcr6174.github.io/solar-atlas/`. To enable it, open **Settings → Pages**, select **Deploy from a branch**, then choose **main** and **/(root)**. The site uses relative asset paths and includes `.nojekyll`.
-
-GitHub currently requires this repository to be public (or an eligible paid plan) for Pages. The link above is the expected address, not an active deployment until Pages settings show a successful publication.
+The site is published from `main` at the repository root. Open [the live app](https://dcr6174.github.io/solar-atlas/). The site uses relative asset paths and includes `.nojekyll`.
 
 [GitHub Pages publishing instructions](https://docs.github.com/en/pages/getting-started-with-github-pages/configuring-a-publishing-source-for-your-github-pages-site)
 
