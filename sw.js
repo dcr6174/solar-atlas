@@ -1,5 +1,5 @@
-const CACHE='solar-atlas-v2';
-const SHELL=['./','./index.html','./style.css?v=2','./app.js?v=2','./orbits.js','./assets/three.module.min.js','./assets/OrbitControls.js','./assets/2k_saturn_ring_alpha.png','./manifest.webmanifest','./icon-192.png','./icon-512.png'];
+const CACHE='solar-atlas-v3';
+const SHELL=['./','./index.html','./style.css?v=3','./app.js?v=3','./orbits.js','./assets/three.module.min.js','./assets/OrbitControls.js','./assets/2k_saturn_ring_alpha.png','./manifest.webmanifest','./icon-192.png','./icon-512.png'];
 const maps=['sun','mercury','venus_atmosphere','earth_daymap','mars','jupiter','saturn','uranus','neptune'];
 const ASSETS=[...SHELL,...maps.map(name=>`./assets/1k_${name}.webp`)];
 self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(ASSETS)).then(()=>self.skipWaiting())));

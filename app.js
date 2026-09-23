@@ -35,7 +35,9 @@ const reducedMotion=matchMedia('(prefers-reduced-motion: reduce)').matches;
 let renderer,scene,camera,controls,starField,flight=null,trackPosition=new THREE.Vector3(),lastTick=0,lastUI=0,lastOrbitDate=NaN,toastTimer,frameID,viewWidth=0,viewHeight=0;
 const objects=new Map(),orbitLines=new Map(),labels=new Map();
 const raycaster=new THREE.Raycaster(),pointer=new THREE.Vector2(),projected=new THREE.Vector3();
-const assetErrors=[];
+const assetErrors=[];let earthDetailRequested=false;
+const optionalVisible=id=>id==='moon'?$('moon-toggle').checked:id==='pluto'?$('pluto-toggle').checked:true;
+function showOptionalBody(id,show){const item=objects.get(id);item.root.visible=show;const orbit=orbitLines.get(id);if(orbit)orbit.visible=show&&$('orbits-toggle').checked;labels.get(id).hidden=!show;if(!show&&state.selected===id){selectBody(id==='moon'?'earth':'sun');if(state.following===id)setView('overview');}makeBodyList();updateLabels();}
 
 function notify(message){$('toast').textContent=message;$('toast').classList.add('visible');clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').classList.remove('visible'),3500);}
 function showInformation(show){$('inspector').hidden=!show;$('show-info').hidden=show;}
@@ -49,6 +51,7 @@ function updateInspector(){
  else{const p=position(b,state.date),distance=Math.hypot(...p),period=b.period<1000?Math.round(b.period):+(b.period/365.25).toFixed(1),unit=b.period<1000?'days':'years';
  $('body-stats').innerHTML=stat('MEAN DIAMETER',b.diameter.toLocaleString('en-US'),'km')+stat('ORBITAL PERIOD',period,unit)+stat('FROM THE SUN',distance.toFixed(2),'AU')+stat('LIGHT TRAVEL',(distance*8.31675).toFixed(1),'min');}
  $('focus-body').innerHTML=icon('target')+(state.following===b.id?'Following '+b.name.replace('The ',''):'Explore up close')+'<span>↗</span>';
+ $('earth-surface').hidden=b.id!=='earth';
 }
 function selectBody(id,{show=true}={}){
  if(!objects.has(id))throw new Error('Unknown celestial body.');
@@ -59,8 +62,8 @@ function selectBody(id,{show=true}={}){
  updateInspector();syncHash();if(show)showInformation(true);
 }
 function makeBodyList(){
- $('body-count').textContent=($('pluto-toggle').checked?'11':'10')+' BODIES';
- $('body-list').innerHTML=bodies.filter(b=>b.id!=='pluto'||$('pluto-toggle').checked).map((b,i)=>`<button class="body-button${b.id===state.selected?' selected':''}" data-body="${b.id}" aria-pressed="${b.id===state.selected}" title="Select ${b.name}"><span class="body-dot" style="--body-color:${b.color}"></span><span>${b.name.replace('The ','')}</span><span class="body-order">${String(i).padStart(2,'0')}</span></button>`).join('');
+ $('body-count').textContent=(9+Number($('moon-toggle').checked)+Number($('pluto-toggle').checked))+' BODIES';
+ $('body-list').innerHTML=bodies.filter(b=>optionalVisible(b.id)).map((b,i)=>`<button class="body-button${b.id===state.selected?' selected':''}" data-body="${b.id}" aria-pressed="${b.id===state.selected}" title="Select ${b.name}"><span class="body-dot" style="--body-color:${b.color}"></span><span>${b.name.replace('The ','')}</span><span class="body-order">${String(i).padStart(2,'0')}</span></button>`).join('');
  $('body-list').onclick=event=>{const button=event.target.closest('[data-body]');if(!button)return;selectBody(button.dataset.body);if(state.following)focusBody(button.dataset.body);};
 }
 function updateDateUI(force=false){
@@ -135,7 +138,7 @@ function setActiveView(id){['overview','inner-view','top-view'].forEach(x=>{cons
 function flyTo(target,offset,follow=null){
  state.following=follow;controls.enablePan=!follow;
  flight={from:camera.position.clone(),fromTarget:controls.target.clone(),target:target.clone(),offset:offset.clone(),start:performance.now(),duration:reducedMotion?0:1000,follow};
- trackPosition.copy(target);controls.minDistance=follow?selectedBody().radius*1.45:.8;
+ trackPosition.copy(target);controls.minDistance=follow?(follow==='earth'?.81:selectedBody().radius*1.45):.8;
 }
 function setView(mode='overview'){
  state.view=mode;state.following=null;controls.enablePan=true;
@@ -151,10 +154,23 @@ function setView(mode='overview'){
 }
 function focusBody(id=state.selected){
  if(!objects.has(id))return;selectBody(id);const item=objects.get(id),b=item.body;
+ if(id==='earth')loadEarthDetail();
  const distance=b.radius*(id==='saturn'?10:7.5)*Math.max(1,1/camera.aspect);
  const offset=new THREE.Vector3(.55,.26,1).normalize().multiplyScalar(distance);
  flyTo(item.root.position,offset,id);state.view='focus';setActiveView(null);
  $('scene-title').innerHTML=b.name+'<span>.</span>';$('scene-subtitle').textContent='Following '+b.name.replace('The ','')+' · Drag to explore';
+ updateInspector();if(innerWidth<=560)showInformation(false);
+}
+function loadEarthDetail(){
+ if(earthDetailRequested)return;earthDetailRequested=true;
+ new THREE.TextureLoader().load('./assets/2k_earth_focus.webp',texture=>{texture.colorSpace=THREE.SRGBColorSpace;texture.anisotropy=Math.min(renderer.capabilities.getMaxAnisotropy(),16);const material=objects.get('earth').mesh.material;material.map=texture;material.needsUpdate=true;},undefined,()=>{earthDetailRequested=false;notify('Detailed Earth map could not load. Try again online.');});
+}
+function focusEarthSurface(){
+ selectBody('earth');loadEarthDetail();const target=objects.get('earth').root.position;
+ const offset=new THREE.Vector3(.55,.26,1).normalize().multiplyScalar(1.2);
+ flyTo(target,offset,'earth');state.view='focus';setActiveView(null);
+ $('scene-title').innerHTML='Earth<span>.</span>';
+ $('scene-subtitle').textContent='Satellite-style globe · Drag to rotate · Scroll or pinch to zoom';
  updateInspector();if(innerWidth<=560)showInformation(false);
 }
 function resize(){
@@ -166,7 +182,7 @@ function updateLabels(){
  const box=$('scene').getBoundingClientRect(),parent=$('universe').getBoundingClientRect();
  objects.forEach((item,id)=>{
   const label=labels.get(id);projected.copy(item.root.position).project(camera);
-  const visible=(id!=='pluto'||$('pluto-toggle').checked)&&projected.z>-1&&projected.z<1&&Math.abs(projected.x)<1&&Math.abs(projected.y)<1&&state.following!==id;
+  const visible=optionalVisible(id)&&projected.z>-1&&projected.z<1&&Math.abs(projected.x)<1&&Math.abs(projected.y)<1&&state.following!==id;
   label.hidden=!visible;if(visible){label.style.left=((projected.x+1)*viewWidth/2+box.left-parent.left)+'px';label.style.top=((-projected.y+1)*viewHeight/2+box.top-parent.top)+'px';}
  });
 }
@@ -192,18 +208,18 @@ function tick(now){
 }
 function hitTest(event){
  const rect=renderer.domElement.getBoundingClientRect();pointer.set((event.clientX-rect.left)/rect.width*2-1,-((event.clientY-rect.top)/rect.height)*2+1);
- raycaster.setFromCamera(pointer,camera);const meshes=[];objects.forEach(o=>o.root.traverse(child=>{if(child.userData.body&&(child.userData.body!=='pluto'||$('pluto-toggle').checked))meshes.push(child);}));
+ raycaster.setFromCamera(pointer,camera);const meshes=[];objects.forEach((o,id)=>{if(optionalVisible(id))o.root.traverse(child=>{if(child.userData.body)meshes.push(child);});});
  const hit=raycaster.intersectObjects(meshes,false)[0];if(hit)return hit.object.userData.body;
  // A small screen-space hit target keeps distant planets easy to select.
  let closest=null,best=18;
- objects.forEach((o,id)=>{if(id==='pluto'&&!$('pluto-toggle').checked)return;const p=o.root.position.clone().project(camera);if(p.z< -1||p.z>1)return;const d=Math.hypot((p.x+1)*rect.width/2+rect.left-event.clientX,(-p.y+1)*rect.height/2+rect.top-event.clientY);if(d<best){closest=id;best=d;}});return closest;
+ objects.forEach((o,id)=>{if(!optionalVisible(id))return;const p=o.root.position.clone().project(camera);if(p.z< -1||p.z>1)return;const d=Math.hypot((p.x+1)*rect.width/2+rect.left-event.clientX,(-p.y+1)*rect.height/2+rect.top-event.clientY);if(d<best){closest=id;best=d;}});return closest;
 }
 function connectUI(){
  $('play').onclick=()=>setPlaying(!state.playing);$('reverse').onclick=()=>{setDirection(-state.direction);notify(state.direction<0?'Time direction: backward':'Time direction: forward');};
  $('back-day').onclick=()=>setDate(state.date-DAY);$('next-day').onclick=()=>setDate(state.date+DAY);
  $('today').onclick=()=>{setDate(Date.now());notify('Returned to today');};
- $('date-preset').onchange=()=>{const value=parseDate($('date-preset').value);if(value!==null)setDate(value);$('date-preset').value='';};
- $('pluto-toggle').onchange=()=>{const show=$('pluto-toggle').checked;objects.get('pluto').root.visible=show;orbitLines.get('pluto').visible=show&&$('orbits-toggle').checked;labels.get('pluto').hidden=!show;if(!show&&state.selected==='pluto')selectBody('sun');makeBodyList();setView('overview');};
+ $('moon-toggle').onchange=()=>showOptionalBody('moon',$('moon-toggle').checked);
+ $('pluto-toggle').onchange=()=>{showOptionalBody('pluto',$('pluto-toggle').checked);setView('overview');};
  $('date-input').addEventListener('focus',()=>setPlaying(false));
  $('date-input').addEventListener('change',()=>{const value=parseDate($('date-input').value);if(value===null){$('date-error').textContent='Choose a valid date from AD 1000 to AD 3000.';return;}setDate(value);});
  $('date-input').addEventListener('blur',()=>{if(parseDate($('date-input').value)===null){updateDateUI(true);}});
@@ -211,7 +227,7 @@ function connectUI(){
  document.querySelectorAll('[data-year]').forEach(el=>el.onclick=()=>setDate(Date.UTC(Number(el.dataset.year),0,1)));
  $('speed').onchange=()=>{state.speed=Number($('speed').value);};
  $('overview').onclick=()=>setView('overview');$('inner-view').onclick=()=>setView('inner');$('top-view').onclick=()=>setView('top');$('reset-view').onclick=()=>setView('overview');
- $('focus-body').onclick=()=>focusBody();$('close-info').onclick=()=>showInformation(false);$('show-info').onclick=()=>showInformation(true);
+ $('focus-body').onclick=()=>focusBody();$('earth-surface').onclick=()=>focusEarthSurface();$('close-info').onclick=()=>showInformation(false);$('show-info').onclick=()=>showInformation(true);
  $('zoom-in').onclick=()=>zoom(.78);$('zoom-out').onclick=()=>zoom(1.28);
  $('orbits-toggle').onchange=()=>orbitLines.forEach((line,id)=>line.visible=$('orbits-toggle').checked&&(id!=='pluto'||$('pluto-toggle').checked));
  $('stars-toggle').onchange=()=>starField.visible=$('stars-toggle').checked;
@@ -259,7 +275,7 @@ function registerAgentTools(){
   if(input.playing!==undefined&&typeof input.playing!=='boolean')throw new Error('playing must be boolean.');
   if(input.direction!==undefined&&input.direction!==1&&input.direction!==-1)throw new Error('direction must be 1 or -1.');
   if(input.daysPerSecond!==undefined&&(!Number.isFinite(input.daysPerSecond)||input.daysPerSecond<0.000011574||input.daysPerSecond>3652.5))throw new Error('Speed is outside the supported range.');
-  if(date!==undefined)setDate(date);if(input.body!==undefined)selectBody(input.body);
+  if(date!==undefined)setDate(date);if(input.body!==undefined){if(input.body==='moon'&&!$('moon-toggle').checked)$('moon-toggle').click();if(input.body==='pluto'&&!$('pluto-toggle').checked)$('pluto-toggle').click();selectBody(input.body);}
   if(input.direction!==undefined)setDirection(input.direction);
   if(input.daysPerSecond!==undefined){state.speed=input.daysPerSecond;const val=String(state.speed);if(!Array.from($('speed').options).some(o=>o.value===val)){const option=new Option(val+' days / second',val);$('speed').add(option);}$('speed').value=val;}
   if(input.view!==undefined){if(input.view==='focus')focusBody();else setView(input.view);}
@@ -276,7 +292,7 @@ function start(){
  const manager=new THREE.LoadingManager();manager.onProgress=(_,loaded,total)=>$('load-status').textContent=`Preparing planets · ${loaded} / ${total}`;
  manager.onError=url=>assetErrors.push(url);
  manager.onLoad=()=>{$('loading').hidden=true;if(assetErrors.length)notify('Some surface maps could not load. Reload to try again.');};
- createObjects(new THREE.TextureLoader(manager));objects.get('pluto').root.visible=initialHash.body==='pluto';orbitLines.get('pluto').visible=initialHash.body==='pluto';$('pluto-toggle').checked=initialHash.body==='pluto';selectBody(initialHash.body||'sun',{show:false});makeBodyList();resize();connectUI();updateDateUI(true);setView('overview');window.addEventListener('hashchange',()=>{const next=readHash();applyingHash=true;try{if(next.date!==null)setDate(next.date);if(next.body){if(next.body==='pluto'&&!$('pluto-toggle').checked)$('pluto-toggle').click();selectBody(next.body);}}finally{applyingHash=false;}});
+ createObjects(new THREE.TextureLoader(manager));for(const id of ['moon','pluto']){const visible=initialHash.body===id;objects.get(id).root.visible=visible;const orbit=orbitLines.get(id);if(orbit)orbit.visible=visible;$(id+'-toggle').checked=visible;}selectBody(initialHash.body||'sun',{show:false});makeBodyList();resize();connectUI();updateDateUI(true);setView('overview');window.addEventListener('hashchange',()=>{const next=readHash();applyingHash=true;try{if(next.date!==null)setDate(next.date);if(next.body){if(!optionalVisible(next.body))$(next.body+'-toggle').click();selectBody(next.body);}}finally{applyingHash=false;}});
  if(innerWidth<=560)showInformation(false);
  new ResizeObserver(()=>{resize();}).observe($('scene'));
  window.addEventListener('pagehide',()=>{cancelAnimationFrame(frameID);controls.dispose();renderer.dispose();},{once:true});

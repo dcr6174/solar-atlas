@@ -18,12 +18,17 @@ try{
  await page.waitForTimeout(1000);await page.screenshot({path:'media/desktop.png'});
  await page.locator('#focus-body').click();await page.waitForTimeout(1100);
  await page.locator('#overview').click();await page.waitForTimeout(1100);
- await page.locator('#date-preset').selectOption('1989-08-25');await page.waitForTimeout(900);
+ await page.locator('#body-list [data-body="earth"]').click();await page.locator('#earth-surface').click();await page.waitForTimeout(1100);
+ if(await page.locator('#body-list [data-body="moon"]').count()!==0)throw Error('Moon should start hidden');
+ await page.locator('#moon-toggle').check();await page.locator('#body-list [data-body="moon"]').click();
+ if(!page.url().includes('body=moon'))throw Error('Moon selection is not shareable');
+ await page.locator('#moon-toggle').uncheck();
+ if(await page.locator('#body-list [data-body="moon"]').count()!==0||page.url().includes('body=moon'))throw Error('Moon toggle did not hide the Moon');
  await page.locator('#play').click();await page.waitForTimeout(1600);await page.locator('#play').click();
  const video=await page.video().path();await desktop.close();await copyFile(video,'media/demo.webm');
  const mobile=await browser.newContext({viewport:{width:390,height:844},deviceScaleFactor:1,isMobile:true,hasTouch:true});
  const small=await mobile.newPage();await small.goto('http://127.0.0.1:8080/#date=1989-08-25&body=neptune');await small.locator('#loading').waitFor({state:'hidden',timeout:30000});
  if(await small.locator('#webgl-error').isVisible()||await small.locator('canvas').count()===0)throw Error('Mobile WebGL2 did not initialize');
  await small.locator('#support-close').click();
- await small.waitForTimeout(900);await small.screenshot({path:'media/mobile.png'});await mobile.close();
+ await small.locator('#body-list [data-body="moon"]').count().then(count=>{if(count)throw Error('Moon should also start hidden on mobile');});await mobile.close();
 }finally{await browser.close();server.close();}

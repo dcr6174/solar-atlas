@@ -1,26 +1,24 @@
 # Solar Atlas
 
-Explore the solar system in 3D, from **AD 1000 to AD 3000**. Follow the eight planets, visit Earth's Moon, and optionally show Pluto's illustrative orbit.
+Explore the solar system in 3D, from **AD 1000 to AD 3000**. Follow the eight planets, optionally show Earth's Moon and Pluto, and zoom closer to Earth.
 
 [**Open Solar Atlas**](https://dcr6174.github.io/solar-atlas/) · [Support the project](https://buymeacoffee.com/dcr6174)
 
 ## Screenshots and recording
 
-Actual WebGL2 captures from the interactive app, at desktop and mobile sizes:
+Desktop capture from the interactive WebGL2 app:
 
 ![Desktop view of Solar Atlas, showing a 3D solar system and time controls](media/desktop.png)
-
-![Mobile view of Solar Atlas, showing the 3D scene and touch-friendly controls](media/mobile.png)
 
 [Watch the short screen recording](media/demo.webm) · [Promotional social preview artwork](social-preview.jpg)
 
 ## Explore
 
 - Drag, swipe, or use **W A S D** to rotate the camera; scroll or pinch to zoom. Click a body or choose it from the list.
-- Follow a body up close, then switch between overview, inner planets, and top views.
-- Choose an exact UTC date, use the 2,000-year slider, or jump to Apollo 11 and Voyager mission dates. Play or reverse time at adjustable speeds.
+- Follow a body up close, then switch between overview, inner planets, and top views. Select Earth and choose **Explore Earth globe** for an orbitable satellite-style view. Its detailed 2K map downloads only when Earth is explored; it does not contain street-level imagery.
+- Choose an exact UTC date or use the 2,000-year slider. Play or reverse time at adjustable speeds.
 - Copy the browser URL to share the selected body and date, for example [`#date=1969-07-20&body=earth`](https://dcr6174.github.io/solar-atlas/#date=1969-07-20&body=earth).
-- Toggle Pluto, orbital paths, labels, and stars. Choose compact or proportional orbital distance.
+- Toggle the Moon, Pluto, orbital paths, labels, and stars. Choose compact or proportional orbital distance.
 - Install the progressive web app from a supported browser; once the app has loaded online, its core interface and planet textures can open offline.
 - Optionally support the project through the corner card linking to [Buy Me a Coffee](https://buymeacoffee.com/dcr6174).
 
@@ -47,6 +45,7 @@ The [GitHub Pages site](https://dcr6174.github.io/solar-atlas/) publishes from `
 | Pan | Right-drag or two fingers |
 | Select a body | Click its sphere or name |
 | Follow a body | Explore up close or double-click its sphere |
+| Explore Earth | Select Earth, then choose Explore Earth globe; drag to rotate and scroll or pinch to zoom |
 | Play / pause | Space when a text control is not focused |
 | Step one day | Left / right arrow keys when a text control is not focused |
 | Reset camera | R |
@@ -79,7 +78,7 @@ This educational visualization is not a precision ephemeris or eclipse predictor
 
 - `index.html`, `style.css`, `app.js`, `orbits.js`: app and orbital model.
 - `manifest.webmanifest`, `sw.js`: installation and offline cache.
-- `assets/`: compressed WebP planet textures, ring texture, bundled Three.js and OrbitControls.
+- `assets/`: compressed WebP planet textures, an Earth detail map loaded on demand, ring texture, bundled Three.js and OrbitControls.
 - `tools/serve.mjs`, `tests/orbits.test.mjs`: local server and orbital checks.
 - `THIRD_PARTY_NOTICES.md`: texture and dependency attribution.
 
