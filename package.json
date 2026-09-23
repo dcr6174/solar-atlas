@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "An interactive 3D solar system spanning Earth's 4.54-billion-year history to 10000 CE.",
+  "description": "An interactive 3D solar system spanning 1000 BCE to 10000 CE.",
   "scripts": {
     "start": "node tools/serve.mjs",
     "test": "node --test tests/orbits.test.mjs",
