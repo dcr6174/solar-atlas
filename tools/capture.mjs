@@ -14,7 +14,11 @@ try{
  const page=await desktop.newPage();await page.goto('http://127.0.0.1:8080/#date=1969-07-20&body=earth');
  await page.locator('#loading').waitFor({state:'hidden',timeout:30000});
  if(await page.locator('#webgl-error').isVisible()||await page.locator('canvas').count()===0)throw Error('WebGL2 did not initialize; refusing to publish misleading captures');
+ if(await page.locator('#support-card').isVisible())throw Error('Support card should start closed');
+ await page.locator('#support-toggle').click();
+ if(!await page.locator('#support-card').isVisible()||await page.locator('#support-toggle').getAttribute('aria-expanded')!=='true')throw Error('Support icon did not open the card');
  await page.locator('#support-close').click();
+ if(await page.locator('#support-card').isVisible())throw Error('Support card did not close');
  if(await page.locator('#earth-shortcut, #earth-surface, #earth-places').count())throw Error('Removed Earth controls remain on desktop');
  await page.locator('[data-year="-999"]').click();
  if(!page.url().includes('date=1000-01-01-BCE'))throw Error('1000 BCE slider endpoint is broken');
@@ -39,6 +43,9 @@ try{
  const mobile=await browser.newContext({viewport:{width:390,height:844},deviceScaleFactor:1,isMobile:true,hasTouch:true});
  const small=await mobile.newPage();await small.goto('http://127.0.0.1:8080/#date=1989-08-25&body=neptune');await small.locator('#loading').waitFor({state:'hidden',timeout:30000});
  if(await small.locator('#webgl-error').isVisible()||await small.locator('canvas').count()===0)throw Error('Mobile WebGL2 did not initialize');
+ if(await small.locator('#support-card').isVisible())throw Error('Mobile support card should start closed');
+ await small.locator('#support-toggle').click();
+ if(!await small.locator('#support-card').isVisible())throw Error('Mobile support icon did not open');
  await small.locator('#support-close').click();
  if(await small.locator('#earth-shortcut, #earth-surface, #earth-places').count())throw Error('Removed Earth controls remain on mobile');
  if(!await small.locator('#time-slider').isVisible()||!await small.locator('#body-list').isVisible())throw Error('Mobile timeline or planet selector is hidden');

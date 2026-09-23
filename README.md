@@ -21,7 +21,7 @@ Desktop capture from the responsive interactive WebGL2 app:
 - Copy the browser URL to share the selected body and date, for example [`#date=1969-07-20-CE&body=earth`](https://dcr6174.github.io/solar-atlas/#date=1969-07-20-CE&body=earth).
 - Toggle the Moon, Pluto, orbital paths, labels, and stars. Choose compact or proportional orbital distance.
 - Install the progressive web app from a supported browser; once the app has loaded online, its core interface and planet textures can open offline.
-- Optionally support the project through the corner card linking to [Buy Me a Coffee](https://buymeacoffee.com/dcr6174).
+- Tap the small coffee icon in the corner to open a closable support card linking to [Buy Me a Coffee](https://buymeacoffee.com/dcr6174).
 
 ## Run locally
 
@@ -84,4 +84,3 @@ This educational visualization is not a precision ephemeris or eclipse predictor
 - `THIRD_PARTY_NOTICES.md`: texture and dependency attribution.
 
 Code is available under the [MIT License](LICENSE). Three.js r170 and OrbitControls are bundled under MIT. Solar System Scope / INOVE surface textures are licensed under CC BY 4.0; retain their attribution when sharing. See [third-party notices](THIRD_PARTY_NOTICES.md).
-
