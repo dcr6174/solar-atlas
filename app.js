@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from './assets/OrbitControls.js';
 import { planets, position, elements, DAY, MIN_DATE, MAX_DATE, parseDate } from './orbits.js';
+import { MAX_AGE, START_AGE, JPL_MIN, JPL_MAX, formatDate, dateKey, formatAge, sliderToTime, timeToSlider, eraLabel, utcDate } from './timeline.js';
 
 const $=id=>document.getElementById(id);
 const icons={
@@ -27,10 +28,10 @@ const pluto={id:'pluto',name:'Pluto',kind:'Dwarf planet · illustrative orbit',c
 const bodies=[sun,...planets,moon,pluto];
 const shareableIds=new Set(bodies.map(b=>b.id));
 let applyingHash=false;
-function syncHash(){if(applyingHash)return;const date=new Date(state.date).toISOString().slice(0,10);const hash='#date='+date+'&body='+state.selected;if(location.hash!==hash)history.replaceState(null,'',hash);}
-function readHash(){const data=new URLSearchParams(location.hash.slice(1));const date=parseDate(data.get('date')||'');const body=data.get('body');return {date,body:shareableIds.has(body)?body:null};}
+function syncHash(){if(applyingHash)return;const time=state.age===null?'date='+dateKey(state.date):'age='+Math.round(state.age);const hash='#'+time+'&body='+state.selected;if(location.hash!==hash)history.replaceState(null,'',hash);}
+function readHash(){const data=new URLSearchParams(location.hash.slice(1));const date=parseDate(data.get('date')||'');const input=Number(data.get('age')),age=data.has('age')&&Number.isFinite(input)&&input>=START_AGE&&input<=MAX_AGE?input:null;const body=data.get('body');return {date,age,body:shareableIds.has(body)?body:null};}
 const initialHash=readHash();
-const state={date:initialHash.date??Math.max(MIN_DATE,Math.min(MAX_DATE,Date.now())),playing:false,speed:10,direction:1,selected:'sun',following:null,scale:'compact',view:'overview'};
+const state={date:initialHash.date??Math.max(MIN_DATE,Math.min(MAX_DATE,Date.now())),age:initialHash.age,playing:false,speed:10,direction:1,selected:'sun',following:null,scale:'compact',view:'overview'};
 const reducedMotion=matchMedia('(prefers-reduced-motion: reduce)').matches;
 let renderer,scene,camera,controls,starField,flight=null,trackPosition=new THREE.Vector3(),lastTick=0,lastUI=0,lastOrbitDate=NaN,toastTimer,frameID,viewWidth=0,viewHeight=0;
 const objects=new Map(),orbitLines=new Map(),labels=new Map();
@@ -48,7 +49,7 @@ function updateInspector(){
  $('body-name').textContent=b.name;$('body-kind').textContent=b.kind.toUpperCase();$('body-description').textContent=b.description;$('body-fact').textContent=b.fact;
  if(b.id==='moon'){$('body-stats').innerHTML=stat('MEAN DIAMETER','3,475','km')+stat('ORBITAL PERIOD','27.3','days')+stat('FROM EARTH','384,400','km')+stat('MODEL','Illustrative');}
  else if(b.id==='sun'){$('body-stats').innerHTML=stat('DIAMETER','1.39M','km')+stat('STAR TYPE','G2V')+stat('AGE','4.6B','years')+stat('SURFACE','5,500','°C');}
- else{const p=position(b,state.date),distance=Math.hypot(...p),period=b.period<1000?Math.round(b.period):+(b.period/365.25).toFixed(1),unit=b.period<1000?'days':'years';
+ else{const p=position(b,visualTime()),distance=Math.hypot(...p),period=b.period<1000?Math.round(b.period):+(b.period/365.25).toFixed(1),unit=b.period<1000?'days':'years';
  $('body-stats').innerHTML=stat('MEAN DIAMETER',b.diameter.toLocaleString('en-US'),'km')+stat('ORBITAL PERIOD',period,unit)+stat('FROM THE SUN',distance.toFixed(2),'AU')+stat('LIGHT TRAVEL',(distance*8.31675).toFixed(1),'min');}
  $('focus-body').innerHTML=icon('target')+(state.following===b.id?'Following '+b.name.replace('The ',''):'Explore up close')+'<span>↗</span>';
  $('earth-surface').hidden=b.id!=='earth';
@@ -67,11 +68,14 @@ function makeBodyList(){
  $('body-list').onclick=event=>{const button=event.target.closest('[data-body]');if(!button)return;selectBody(button.dataset.body);if(state.following)focusBody(button.dataset.body);};
 }
 function updateDateUI(force=false){
- if(force||document.activeElement!==$('date-input'))$('date-input').value=new Date(state.date).toISOString().slice(0,10);
- const progress=(state.date-MIN_DATE)/(MAX_DATE-MIN_DATE)*100;
- $('time-slider').value=Math.round(progress*1000);$('time-slider').style.setProperty('--progress',progress+'%');
- $('time-slider').setAttribute('aria-valuetext',new Date(state.date).toISOString().slice(0,10)+' AD');
- $('back-day').disabled=state.date<=MIN_DATE;$('next-day').disabled=state.date>=MAX_DATE;
+ const label=state.age===null?formatDate(state.date):formatAge(state.age),progress=timeToSlider(state.date,state.age);
+ if(force||document.activeElement!==$('date-input'))$('date-input').value=label;
+ $('time-slider').value=Math.round(progress);$('time-slider').style.setProperty('--progress',progress/1000+'%');
+ $('time-slider').setAttribute('aria-valuetext',label);
+ $('back-day').disabled=state.age!==null||state.date<=MIN_DATE;$('next-day').disabled=state.age!==null||state.date>=MAX_DATE;
+ const valid=state.age===null&&state.date>=JPL_MIN&&state.date<=JPL_MAX;
+ $('era-status').textContent=state.age!==null?eraLabel(state.age)+' · illustrative positions':valid?'JPL approximate orbits':'Illustrative orbits · outside JPL dates';
+ $('era-status').title=valid?'Approximate orbital solution valid 3000 BCE–3000 CE':'Outside JPL’s fitted interval. The planet positions are illustrative.';
 }
 function setPlaying(value){
  state.playing=Boolean(value);$('play').innerHTML=icon(state.playing?'pause':'play');$('play').setAttribute('aria-label',state.playing?'Pause time':'Play time');
@@ -80,9 +84,17 @@ function setPlaying(value){
 function setDirection(value){state.direction=value;$('reverse').classList.toggle('active',value<0);$('reverse').setAttribute('aria-pressed',String(value<0));setPlaying(state.playing);}
 function setDate(value,{pause=true}={}){
  if(!Number.isFinite(value))throw new Error('Invalid date.');
- state.date=Math.max(MIN_DATE,Math.min(MAX_DATE,value));if(pause)setPlaying(false);
+ state.age=null;state.date=Math.max(MIN_DATE,Math.min(MAX_DATE,value));if(pause)setPlaying(false);
  $('date-error').textContent='';updateDateUI(true);updatePositions();updateOrbitLines();updateInspector();syncHash();
 }
+function setDeepAge(value,{pause=true}={}){
+ if(!Number.isFinite(value))throw new Error('Invalid geological age.');
+ state.age=Math.max(START_AGE,Math.min(MAX_AGE,value));if(pause)setPlaying(false);
+ $('date-error').textContent='';updateDateUI(true);updatePositions();updateOrbitLines();updateInspector();syncHash();
+}
+// Geological time is too distant for a calendar timestamp or an ephemeris.
+// Repeat a short modern orbit cycle solely to keep the illustrative scene explorable.
+function visualTime(){return state.age===null?state.date:utcDate(2000,1,1)+(state.age%500)*365.25*DAY;}
 function displayPosition(b,milliseconds,E){const p=position(b,milliseconds,E);const factor=state.scale==='compact'?b.displayOrbit/b.base[0]:10;return new THREE.Vector3(p[0]*factor,p[2]*factor,-p[1]*factor);}
 function makeTexture(loader,name){const source=name.endsWith('.jpg')?name.replace('2k_','1k_').replace('.jpg','.webp'):name;const texture=loader.load('./assets/'+source);texture.colorSpace=THREE.SRGBColorSpace;texture.anisotropy=Math.min(renderer.capabilities.getMaxAnisotropy(),8);return texture;}
 function makeGlow(){
@@ -125,14 +137,15 @@ function createObjects(loader){
  updatePositions();updateOrbitLines();
 }
 function updatePositions(){
- [...planets,pluto].forEach(b=>{const item=objects.get(b.id);if(!item)return;item.root.position.copy(displayPosition(b,state.date));item.mesh.rotation.y=((state.date/DAY/b.rotation)%1)*Math.PI*2;});
- const earth=objects.get('earth'),satellite=objects.get('moon');if(earth&&satellite){const angle=(state.date-Date.UTC(2000,0,1))/DAY/27.3217*Math.PI*2;satellite.root.position.copy(earth.root.position).add(new THREE.Vector3(1.55*Math.cos(angle),.14*Math.sin(angle*.91),1.55*Math.sin(angle)));satellite.mesh.rotation.y=angle;}
- const star=objects.get('sun');if(star)star.mesh.rotation.y=((state.date/DAY/25.38)%1)*Math.PI*2;
+ const date=visualTime();[...planets,pluto].forEach(b=>{const item=objects.get(b.id);if(!item)return;item.root.position.copy(displayPosition(b,date));item.mesh.rotation.y=((date/DAY/b.rotation)%1)*Math.PI*2;});
+ const earth=objects.get('earth'),satellite=objects.get('moon');if(earth&&satellite){const angle=(date-utcDate(2000,1,1))/DAY/27.3217*Math.PI*2;satellite.root.position.copy(earth.root.position).add(new THREE.Vector3(1.55*Math.cos(angle),.14*Math.sin(angle*.91),1.55*Math.sin(angle)));satellite.mesh.rotation.y=angle;}
+ const star=objects.get('sun');if(star)star.mesh.rotation.y=((date/DAY/25.38)%1)*Math.PI*2;
 }
 function updateOrbitLines(){
+ const date=visualTime();
  [...planets,pluto].forEach(b=>{const line=orbitLines.get(b.id);if(!line)return;const attr=line.geometry.attributes.position;
-  for(let i=0;i<361;i++){const p=displayPosition(b,state.date,i/360*Math.PI*2);attr.setXYZ(i,p.x,p.y,p.z);}attr.needsUpdate=true;line.geometry.computeBoundingSphere();
- });lastOrbitDate=state.date;
+  for(let i=0;i<361;i++){const p=displayPosition(b,date,i/360*Math.PI*2);attr.setXYZ(i,p.x,p.y,p.z);}attr.needsUpdate=true;line.geometry.computeBoundingSphere();
+ });lastOrbitDate=date;
 }
 function setActiveView(id){['overview','inner-view','top-view'].forEach(x=>{const active=x===id;$(x).classList.toggle('active',active);$(x).setAttribute('aria-pressed',String(active));});}
 function flyTo(target,offset,follow=null){
@@ -142,6 +155,7 @@ function flyTo(target,offset,follow=null){
 }
 function setView(mode='overview'){
  state.view=mode;state.following=null;controls.enablePan=true;
+ $('back-system').hidden=true;$('earth-places').hidden=true;
  const maxRadius=state.scale==='actual'?($('pluto-toggle').checked?400:307):($('pluto-toggle').checked?86:72);
  const mobile=innerWidth<900;const aspect=Math.max(.55,camera.aspect);
  let distance=maxRadius*(mobile?2.1:1.72)*Math.max(1,1.25/aspect);
@@ -158,8 +172,9 @@ function focusBody(id=state.selected){
  const distance=b.radius*(id==='saturn'?10:7.5)*Math.max(1,1/camera.aspect);
  const offset=new THREE.Vector3(.55,.26,1).normalize().multiplyScalar(distance);
  flyTo(item.root.position,offset,id);state.view='focus';setActiveView(null);
+ $('back-system').hidden=false;$('earth-places').hidden=id!=='earth';
  $('scene-title').innerHTML=b.name+'<span>.</span>';$('scene-subtitle').textContent='Following '+b.name.replace('The ','')+' · Drag to explore';
- updateInspector();if(innerWidth<=560)showInformation(false);
+ updateInspector();if(innerWidth<=560&&id!=='earth')showInformation(false);
 }
 function loadEarthDetail(){
  if(earthDetailRequested)return;earthDetailRequested=true;
@@ -169,9 +184,16 @@ function focusEarthSurface(){
  selectBody('earth');loadEarthDetail();const target=objects.get('earth').root.position;
  const offset=new THREE.Vector3(.55,.26,1).normalize().multiplyScalar(1.2);
  flyTo(target,offset,'earth');state.view='focus';setActiveView(null);
+ $('back-system').hidden=false;$('earth-places').hidden=false;
  $('scene-title').innerHTML='Earth<span>.</span>';
  $('scene-subtitle').textContent='Satellite-style globe · Drag to rotate · Scroll or pinch to zoom';
- updateInspector();if(innerWidth<=560)showInformation(false);
+ updateInspector();showInformation(true);
+}
+function earthRegion(lat,lon){
+ focusEarthSurface();const theta=THREE.MathUtils.degToRad(lon+180),phi=THREE.MathUtils.degToRad(lat);
+ const direction=new THREE.Vector3(-Math.cos(phi)*Math.sin(theta),Math.sin(phi),Math.cos(phi)*Math.cos(theta));
+ const q=new THREE.Quaternion();objects.get('earth').mesh.getWorldQuaternion(q);direction.applyQuaternion(q);
+ flyTo(objects.get('earth').root.position,direction.multiplyScalar(1.18),'earth');
 }
 function resize(){
  const bounds=$('scene').getBoundingClientRect();viewWidth=bounds.width;viewHeight=bounds.height;
@@ -189,10 +211,9 @@ function updateLabels(){
 function tick(now){
  const delta=lastTick?Math.min((now-lastTick)/1000,.1):0;lastTick=now;
  if(state.playing&&!document.hidden){
-  const next=state.date+delta*state.speed*state.direction*DAY;
-  state.date=Math.min(MAX_DATE,Math.max(MIN_DATE,next));
-  if(next<=MIN_DATE||next>=MAX_DATE){setPlaying(false);notify(next<=MIN_DATE?'Reached AD 1000. Reverse direction to continue.':'Reached AD 3000. Reverse direction to continue.');}
-  updatePositions();if(Math.abs(state.date-lastOrbitDate)>DAY*365.25*2)updateOrbitLines();
+  if(state.age!==null){const age=state.age-delta*state.speed*state.direction*1e6;if(age<START_AGE){state.age=null;state.date=MIN_DATE;}else if(age>MAX_AGE){state.age=MAX_AGE;setPlaying(false);notify('Reached Earth’s formation. Reverse direction to continue.');}else state.age=age;}
+  else{const next=state.date+delta*state.speed*state.direction*DAY;state.date=Math.min(MAX_DATE,Math.max(MIN_DATE,next));if(next<=MIN_DATE){if(state.direction<0){state.age=START_AGE+1;state.date=MIN_DATE;}else state.date=MIN_DATE;}if(next>=MAX_DATE){setPlaying(false);notify('Reached 10,000 CE. Reverse direction to continue.');}}
+  updatePositions();if(Math.abs(visualTime()-lastOrbitDate)>DAY*365.25*2)updateOrbitLines();
  }
  if(flight){
   const t=flight.duration?Math.min(1,(now-flight.start)/flight.duration):1,eased=1-Math.pow(1-t,3);
@@ -221,12 +242,15 @@ function connectUI(){
  $('moon-toggle').onchange=()=>showOptionalBody('moon',$('moon-toggle').checked);
  $('pluto-toggle').onchange=()=>{showOptionalBody('pluto',$('pluto-toggle').checked);setView('overview');};
  $('date-input').addEventListener('focus',()=>setPlaying(false));
- $('date-input').addEventListener('change',()=>{const value=parseDate($('date-input').value);if(value===null){$('date-error').textContent='Choose a valid date from AD 1000 to AD 3000.';return;}setDate(value);});
+ $('date-input').addEventListener('change',()=>{const value=parseDate($('date-input').value);if(value===null){$('date-error').textContent='Enter YYYY-MM-DD BCE or CE, from 10,000 BCE to 10,000 CE.';return;}setDate(value);});
  $('date-input').addEventListener('blur',()=>{if(parseDate($('date-input').value)===null){updateDateUI(true);}});
- $('time-slider').oninput=()=>setDate(MIN_DATE+(MAX_DATE-MIN_DATE)*Number($('time-slider').value)/100000);
- document.querySelectorAll('[data-year]').forEach(el=>el.onclick=()=>setDate(Date.UTC(Number(el.dataset.year),0,1)));
+ $('date-input').addEventListener('keydown',event=>{if(event.key==='Enter'){$('date-input').blur();}});
+ $('time-slider').oninput=()=>{const time=sliderToTime($('time-slider').value);if(time.age!==null)setDeepAge(time.age);else setDate(time.date);};
+ document.querySelectorAll('[data-year]').forEach(el=>el.onclick=()=>setDate(utcDate(Number(el.dataset.year),1,1)));
+ document.querySelectorAll('[data-age]').forEach(el=>el.onclick=()=>setDeepAge(Number(el.dataset.age)));
  $('speed').onchange=()=>{state.speed=Number($('speed').value);};
- $('overview').onclick=()=>setView('overview');$('inner-view').onclick=()=>setView('inner');$('top-view').onclick=()=>setView('top');$('reset-view').onclick=()=>setView('overview');
+ $('overview').onclick=()=>setView('overview');$('inner-view').onclick=()=>setView('inner');$('top-view').onclick=()=>setView('top');$('reset-view').onclick=()=>setView('overview');$('back-system').onclick=()=>setView('overview');$('earth-shortcut').onclick=()=>focusEarthSurface();
+ document.querySelectorAll('[data-lat][data-lon]').forEach(button=>button.onclick=()=>earthRegion(Number(button.dataset.lat),Number(button.dataset.lon)));
  $('focus-body').onclick=()=>focusBody();$('earth-surface').onclick=()=>focusEarthSurface();$('close-info').onclick=()=>showInformation(false);$('show-info').onclick=()=>showInformation(true);
  $('zoom-in').onclick=()=>zoom(.78);$('zoom-out').onclick=()=>zoom(1.28);
  $('orbits-toggle').onchange=()=>orbitLines.forEach((line,id)=>line.visible=$('orbits-toggle').checked&&(id!=='pluto'||$('pluto-toggle').checked));
@@ -241,8 +265,8 @@ function connectUI(){
   if($('guide').open||event.altKey||event.metaKey||event.ctrlKey||/^(INPUT|SELECT|TEXTAREA|BUTTON|A)$/.test(event.target.tagName))return;
   if(['KeyW','KeyA','KeyS','KeyD'].includes(event.code)){event.preventDefault();flight=null;const offset=camera.position.clone().sub(controls.target);const spherical=new THREE.Spherical().setFromVector3(offset);spherical.theta+=event.code==='KeyA'?.12:event.code==='KeyD'?-.12:0;spherical.phi=Math.max(.05,Math.min(Math.PI-.05,spherical.phi+(event.code==='KeyW'?.12:event.code==='KeyS'?-.12:0)));camera.position.copy(controls.target).add(new THREE.Vector3().setFromSpherical(spherical));controls.update();return;}
   if(event.code==='Space'){event.preventDefault();setPlaying(!state.playing);}
-  if(event.key==='ArrowLeft'){event.preventDefault();setDate(state.date-DAY);}
-  if(event.key==='ArrowRight'){event.preventDefault();setDate(state.date+DAY);}
+  if(event.key==='ArrowLeft'){event.preventDefault();state.age!==null?setDeepAge(state.age+1e6):setDate(state.date-DAY);}
+  if(event.key==='ArrowRight'){event.preventDefault();state.age!==null?setDeepAge(state.age-1e6):setDate(state.date+DAY);}
   if(event.key.toLowerCase()==='r'||event.key==='Escape')setView('overview');
   if(event.key==='+'||event.key==='=')zoom(.8);if(event.key==='-')zoom(1.25);
  });
@@ -265,22 +289,24 @@ function setScale(value){
 function registerAgentTools(){
  if(!document.modelContext?.registerTool)return;
  const lifecycle=new AbortController();window.addEventListener('pagehide',()=>lifecycle.abort(),{once:true});
- const schema={type:'object',properties:{date:{type:'string',description:'Proleptic Gregorian date YYYY-MM-DD, AD 1000–3000'},body:{type:'string',enum:bodies.map(x=>x.id)},view:{type:'string',enum:['overview','inner','top','focus']},playing:{type:'boolean'},direction:{type:'integer',enum:[-1,1]},daysPerSecond:{type:'number',minimum:0.000011574,maximum:3652.5}},additionalProperties:false};
+ const schema={type:'object',properties:{date:{type:'string',description:'Calendar date YYYY-MM-DD BCE or CE, from 10000 BCE to 10000 CE'},ageYears:{type:'number',description:'Years before present, from about 12000 to 4540000000'},body:{type:'string',enum:bodies.map(x=>x.id)},view:{type:'string',enum:['overview','inner','top','focus']},playing:{type:'boolean'},direction:{type:'integer',enum:[-1,1]},daysPerSecond:{type:'number',minimum:0.000011574,maximum:3652.5}},additionalProperties:false};
  try{Promise.resolve(document.modelContext.registerTool({name:'configure_solar_system',title:'Explore the solar system',description:'Set the visible date, selected body, camera view, and time playback in Solar Atlas.',inputSchema:schema,annotations:{readOnlyHint:false,untrustedContentHint:false},async execute(input){
   if(!input||typeof input!=='object'||Array.isArray(input))throw new Error('Expected an object.');
   const allowed=Object.keys(schema.properties);if(Object.keys(input).some(k=>!allowed.includes(k)))throw new Error('Unknown option.');
-  const date=input.date===undefined?undefined:parseDate(input.date);if(date===null)throw new Error('Date must be valid and within AD 1000–3000.');
+  const date=input.date===undefined?undefined:parseDate(input.date);if(date===null)throw new Error('Enter a date from 10000 BCE to 10000 CE.');
+  if(input.ageYears!==undefined&&(!Number.isFinite(input.ageYears)||input.ageYears<START_AGE||input.ageYears>MAX_AGE))throw new Error('Geological age is outside the supported range.');
+  if(input.ageYears!==undefined&&date!==undefined)throw new Error('Choose a calendar date or a geological age.');
   if(input.body!==undefined&&!bodies.some(b=>b.id===input.body))throw new Error('Unknown body.');
   if(input.view!==undefined&&!['overview','inner','top','focus'].includes(input.view))throw new Error('Unknown view.');
   if(input.playing!==undefined&&typeof input.playing!=='boolean')throw new Error('playing must be boolean.');
   if(input.direction!==undefined&&input.direction!==1&&input.direction!==-1)throw new Error('direction must be 1 or -1.');
   if(input.daysPerSecond!==undefined&&(!Number.isFinite(input.daysPerSecond)||input.daysPerSecond<0.000011574||input.daysPerSecond>3652.5))throw new Error('Speed is outside the supported range.');
-  if(date!==undefined)setDate(date);if(input.body!==undefined){if(input.body==='moon'&&!$('moon-toggle').checked)$('moon-toggle').click();if(input.body==='pluto'&&!$('pluto-toggle').checked)$('pluto-toggle').click();selectBody(input.body);}
+  if(date!==undefined)setDate(date);if(input.ageYears!==undefined)setDeepAge(input.ageYears);if(input.body!==undefined){if(input.body==='moon'&&!$('moon-toggle').checked)$('moon-toggle').click();if(input.body==='pluto'&&!$('pluto-toggle').checked)$('pluto-toggle').click();selectBody(input.body);}
   if(input.direction!==undefined)setDirection(input.direction);
   if(input.daysPerSecond!==undefined){state.speed=input.daysPerSecond;const val=String(state.speed);if(!Array.from($('speed').options).some(o=>o.value===val)){const option=new Option(val+' days / second',val);$('speed').add(option);}$('speed').value=val;}
   if(input.view!==undefined){if(input.view==='focus')focusBody();else setView(input.view);}
   if(input.playing!==undefined)setPlaying(input.playing);
-  await new Promise(resolve=>requestAnimationFrame(resolve));return {date:new Date(state.date).toISOString(),body:state.selected,view:state.view,playing:state.playing,direction:state.direction,daysPerSecond:state.speed};
+  await new Promise(resolve=>requestAnimationFrame(resolve));return {date:state.age===null?formatDate(state.date):null,ageYears:state.age,body:state.selected,view:state.view,playing:state.playing,direction:state.direction,daysPerSecond:state.speed};
  }},{signal:lifecycle.signal})).catch(()=>{});}catch{}
 }
 function start(){
@@ -292,7 +318,7 @@ function start(){
  const manager=new THREE.LoadingManager();manager.onProgress=(_,loaded,total)=>$('load-status').textContent=`Preparing planets · ${loaded} / ${total}`;
  manager.onError=url=>assetErrors.push(url);
  manager.onLoad=()=>{$('loading').hidden=true;if(assetErrors.length)notify('Some surface maps could not load. Reload to try again.');};
- createObjects(new THREE.TextureLoader(manager));for(const id of ['moon','pluto']){const visible=initialHash.body===id;objects.get(id).root.visible=visible;const orbit=orbitLines.get(id);if(orbit)orbit.visible=visible;$(id+'-toggle').checked=visible;}selectBody(initialHash.body||'sun',{show:false});makeBodyList();resize();connectUI();updateDateUI(true);setView('overview');window.addEventListener('hashchange',()=>{const next=readHash();applyingHash=true;try{if(next.date!==null)setDate(next.date);if(next.body){if(!optionalVisible(next.body))$(next.body+'-toggle').click();selectBody(next.body);}}finally{applyingHash=false;}});
+ createObjects(new THREE.TextureLoader(manager));for(const id of ['moon','pluto']){const visible=initialHash.body===id;objects.get(id).root.visible=visible;const orbit=orbitLines.get(id);if(orbit)orbit.visible=visible;$(id+'-toggle').checked=visible;}selectBody(initialHash.body||'sun',{show:false});makeBodyList();resize();connectUI();updateDateUI(true);setView('overview');window.addEventListener('hashchange',()=>{const next=readHash();applyingHash=true;try{if(next.age!==null)setDeepAge(next.age);else if(next.date!==null)setDate(next.date);if(next.body){if(!optionalVisible(next.body))$(next.body+'-toggle').click();selectBody(next.body);}}finally{applyingHash=false;}});
  if(innerWidth<=560)showInformation(false);
  new ResizeObserver(()=>{resize();}).observe($('scene'));
  window.addEventListener('pagehide',()=>{cancelAnimationFrame(frameID);controls.dispose();renderer.dispose();},{once:true});

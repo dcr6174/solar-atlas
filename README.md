@@ -1,6 +1,6 @@
 # Solar Atlas
 
-Explore the solar system in 3D, from **AD 1000 to AD 3000**. Follow the eight planets, optionally show Earth's Moon and Pluto, and zoom closer to Earth.
+Explore the solar system in 3D, from **Earth’s formation about 4.54 billion years ago to 10,000 CE**. Follow the eight planets, optionally show Earth's Moon and Pluto, and zoom closer to Earth.
 
 [**Open Solar Atlas**](https://dcr6174.github.io/solar-atlas/) · [Support the project](https://buymeacoffee.com/dcr6174)
 
@@ -15,9 +15,9 @@ Desktop capture from the interactive WebGL2 app:
 ## Explore
 
 - Drag, swipe, or use **W A S D** to rotate the camera; scroll or pinch to zoom. Click a body or choose it from the list.
-- Follow a body up close, then switch between overview, inner planets, and top views. Select Earth and choose **Explore Earth globe** for an orbitable satellite-style view. Its detailed 2K map downloads only when Earth is explored; it does not contain street-level imagery.
-- Choose an exact UTC date or use the 2,000-year slider. Play or reverse time at adjustable speeds.
-- Copy the browser URL to share the selected body and date, for example [`#date=1969-07-20&body=earth`](https://dcr6174.github.io/solar-atlas/#date=1969-07-20&body=earth).
+- Follow a body up close, then switch between overview, inner planets, and top views. Use **Earth globe** to jump directly to Earth, then choose a region or drag the globe for an orbitable satellite-style view. Its detailed 2K map downloads only when Earth is explored; it does not contain street-level imagery.
+- Scrub geological time back to 4.54 billion years ago, then calendar dates from 10,000 BCE through 10,000 CE. Type a date such as `0044-03-15 BCE` or `10000-12-31 CE`. Play or reverse at adjustable speeds; the deep-time playback speed is measured in millions of years per second.
+- Copy the browser URL to share the selected body and time, for example [`#date=1969-07-20-CE&body=earth`](https://dcr6174.github.io/solar-atlas/#date=1969-07-20-CE&body=earth) or `#age=4540000000&body=earth`.
 - Toggle the Moon, Pluto, orbital paths, labels, and stars. Choose compact or proportional orbital distance.
 - Install the progressive web app from a supported browser; once the app has loaded online, its core interface and planet textures can open offline.
 - Optionally support the project through the corner card linking to [Buy Me a Coffee](https://buymeacoffee.com/dcr6174).
@@ -45,9 +45,10 @@ The [GitHub Pages site](https://dcr6174.github.io/solar-atlas/) publishes from `
 | Pan | Right-drag or two fingers |
 | Select a body | Click its sphere or name |
 | Follow a body | Explore up close or double-click its sphere |
-| Explore Earth | Select Earth, then choose Explore Earth globe; drag to rotate and scroll or pinch to zoom |
+| Explore Earth | Choose Earth globe, then a region; drag to rotate and scroll or pinch to zoom |
+| Return from a close-up | Back to solar system |
 | Play / pause | Space when a text control is not focused |
-| Step one day | Left / right arrow keys when a text control is not focused |
+| Step time | Left / right arrow keys: one day in calendar mode, one million years in deep time |
 | Reset camera | R |
 | Leave close-up | Escape |
 
@@ -66,17 +67,17 @@ npm test
 npm run check
 ```
 
-Tests cover the eight planets' orbital bounds across AD 1000–3000, date and leap-year validation, and an Earth J2000 sanity check. Browser visual behavior requires a WebGL2 browser and is separate from these checks.
+Tests cover the eight planets' orbital bounds across the JPL fitted 3000 BCE–3000 CE interval, BCE/CE and leap-year validation, deep-time slider boundaries, and an Earth J2000 sanity check. Browser visual behavior requires a WebGL2 browser and is separate from these checks.
 
 ## Scientific scope
 
-The eight planet positions use [NASA JPL's long-range approximate Keplerian elements](https://ssd.jpl.nasa.gov/planets/approx_pos.html), including Jupiter–Neptune corrections. Earth uses the Earth–Moon barycenter. The Moon's position around Earth and Pluto's orbit are **illustrative**, outside this eight-planet JPL model. Their size and spacing are enlarged so they remain visible.
+The eight planet positions use [NASA JPL's long-range approximate Keplerian elements](https://ssd.jpl.nasa.gov/planets/approx_pos.html), including Jupiter–Neptune corrections. **Those elements are fitted for 3000 BCE–3000 CE only.** Outside that interval, orbital positions are illustrative extrapolations; in geological time the animation uses modern-style orbits, not reconstructed ancient positions. Earth uses the Earth–Moon barycenter. The Moon's position around Earth and Pluto's orbit are **illustrative**, outside this eight-planet JPL model. Their size and spacing are enlarged so they remain visible.
 
-This educational visualization is not a precision ephemeris or eclipse predictor. Dates use the proleptic Gregorian calendar and UTC as an approximation for ephemeris time. Compact mode compresses distances; rotations, orientations, surface maps, and ancient appearances are illustrative.
+This educational visualization is not a precision ephemeris or eclipse predictor. Dates use the proleptic Gregorian calendar and UTC as an approximation for ephemeris time. Compact mode compresses distances; rotations, orientations, surface maps, and ancient appearances are illustrative. The present-day Earth texture is reused in every era and is not a reconstruction of early Earth.
 
 ## Files and credits
 
-- `index.html`, `style.css`, `app.js`, `orbits.js`: app and orbital model.
+- `index.html`, `style.css`, `app.js`, `orbits.js`, `timeline.js`: app and orbital model.
 - `manifest.webmanifest`, `sw.js`: installation and offline cache.
 - `assets/`: compressed WebP planet textures, an Earth detail map loaded on demand, ring texture, bundled Three.js and OrbitControls.
 - `tools/serve.mjs`, `tests/orbits.test.mjs`: local server and orbital checks.

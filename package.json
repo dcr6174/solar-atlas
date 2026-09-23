@@ -3,11 +3,11 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "An interactive 3D solar system with time travel from AD 1000 to 3000.",
+  "description": "An interactive 3D solar system spanning Earth's 4.54-billion-year history to 10000 CE.",
   "scripts": {
     "start": "node tools/serve.mjs",
     "test": "node --test tests/orbits.test.mjs",
-    "check": "node --check app.js && node --check orbits.js && node --check tools/serve.mjs"
+    "check": "node --check app.js && node --check timeline.js && node --check orbits.js && node --check tools/serve.mjs"
   },
   "engines": { "node": ">=18" }
 }

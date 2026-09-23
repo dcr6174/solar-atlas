@@ -15,6 +15,17 @@ try{
  await page.locator('#loading').waitFor({state:'hidden',timeout:30000});
  if(await page.locator('#webgl-error').isVisible()||await page.locator('canvas').count()===0)throw Error('WebGL2 did not initialize; refusing to publish misleading captures');
  await page.locator('#support-close').click();
+ await page.locator('#earth-shortcut').click();
+ if(!await page.locator('#back-system').isVisible()||!await page.locator('#earth-places').isVisible())throw Error('Earth navigation is inaccessible');
+ await page.locator('[data-lat="35"][data-lon="-95"]').click();
+ await page.locator('#back-system').click();
+ await page.locator('[data-age="4540000000"]').click();
+ if(!page.url().includes('age=4540000000')||!((await page.locator('#era-status').innerText()).includes('illustrative')))throw Error('Deep-time endpoint or scope label is broken');
+ await page.locator('#date-input').fill('0044-03-15 BCE');await page.locator('#date-input').press('Tab');
+ if(!page.url().includes('date=0044-03-15-BCE'))throw Error('BCE date is not shareable');
+ await page.locator('#date-input').fill('10000-12-31 CE');await page.locator('#date-input').press('Tab');
+ if(!page.url().includes('date=10000-12-31-CE'))throw Error('Calendar endpoint is broken');
+ await page.locator('#date-input').fill('1969-07-20 CE');await page.locator('#date-input').press('Tab');
  await page.waitForTimeout(1000);await page.screenshot({path:'media/desktop.png'});
  await page.locator('#focus-body').click();await page.waitForTimeout(1100);
  await page.locator('#overview').click();await page.waitForTimeout(1100);
@@ -30,5 +41,8 @@ try{
  const small=await mobile.newPage();await small.goto('http://127.0.0.1:8080/#date=1989-08-25&body=neptune');await small.locator('#loading').waitFor({state:'hidden',timeout:30000});
  if(await small.locator('#webgl-error').isVisible()||await small.locator('canvas').count()===0)throw Error('Mobile WebGL2 did not initialize');
  await small.locator('#support-close').click();
+ await small.locator('#earth-shortcut').click();
+ if(!await small.locator('#earth-places').isVisible())throw Error('Earth regions are inaccessible on mobile');
+ if(await small.evaluate(()=>document.documentElement.scrollWidth>innerWidth))throw Error('Mobile layout overflows viewport');
  await small.locator('#body-list [data-body="moon"]').count().then(count=>{if(count)throw Error('Moon should also start hidden on mobile');});await mobile.close();
 }finally{await browser.close();server.close();}

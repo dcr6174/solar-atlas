@@ -1,9 +1,8 @@
 // NASA JPL SSD, Approximate Positions of the Planets, Tables 2a and 2b.
 // https://ssd.jpl.nasa.gov/planets/approx_pos.html
 // [a (AU), eccentricity, inclination, mean longitude, perihelion, node (degrees)].
-export const DAY = 86400000;
-export const MIN_DATE = Date.UTC(1000, 0, 1);
-export const MAX_DATE = Date.UTC(3000, 11, 31);
+import { DAY } from './timeline.js';
+export { DAY, MIN_DATE, MAX_DATE, parseDate } from './timeline.js';
 const R = Math.PI / 180;
 export const planets = [
  {id:'mercury',name:'Mercury',kind:'Terrestrial planet',color:'#b3a59b',radius:0.44,displayOrbit:8,diameter:4879,period:87.969,rotation:58.646,tilt:0.03,texture:'2k_mercury.jpg',description:'A small, crater-covered world that races around the Sun in just 88 Earth days.',fact:'A solar day on Mercury lasts about two of its years.',base:[.38709843,.20563661,7.00559432,252.25166724,77.45771895,48.33961819],rate:[0,.00002123,-.00590158,149472.67486623,.15940013,-.12214182]},
@@ -29,9 +28,4 @@ export function position(planet,milliseconds,eccentricAnomaly) {
  const x=a*(Math.cos(E)-e),y=a*Math.sqrt(1-e*e)*Math.sin(E);
  const cw=Math.cos(w),sw=Math.sin(w),cn=Math.cos(N),sn=Math.sin(N),ci=Math.cos(I),si=Math.sin(I);
  return [(cw*cn-sw*sn*ci)*x+(-sw*cn-cw*sn*ci)*y,(cw*sn+sw*cn*ci)*x+(-sw*sn+cw*cn*ci)*y,sw*si*x+cw*si*y];
-}
-export function parseDate(value) {
- if(!/^\d{4}-\d{2}-\d{2}$/.test(value))return null;
- const n=Date.parse(value+'T00:00:00Z');
- return Number.isFinite(n)&&n>=MIN_DATE&&n<=MAX_DATE&&new Date(n).toISOString().slice(0,10)===value?n:null;
 }

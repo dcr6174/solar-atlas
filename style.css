@@ -29,3 +29,14 @@
 .earth-surface:not([hidden]){display:block;width:100%;margin-top:9px;padding:11px 13px;border:1px solid #efbf8375;border-radius:8px;background:#1d2835;color:#f5cc99;text-align:left;font-size:13px;font-weight:700;cursor:pointer}
 .earth-surface:hover{background:#2b3948}.earth-surface>span{float:right}.earth-surface small{display:block;margin-top:4px;color:#b8c5d6;font-size:11px;font-weight:400}
 @media(max-width:560px){.display-controls{gap:6px;left:12px;right:12px;flex-wrap:wrap}.display-controls .scale-control{padding-left:5px}.display-controls .scale-control select{max-width:86px;font-size:11px}}
+
+/* Earth navigation and geological-to-calendar timeline. */
+#earth-shortcut{color:#b4dbff}#earth-shortcut:hover{color:#fff;background:#385374}
+.back-system:not([hidden]){position:absolute;top:84px;left:50%;transform:translateX(-50%);z-index:5;padding:9px 13px;color:#eaf2ff;background:#182639;border:1px solid #6385af;border-radius:999px;font-size:12px;font-weight:700;white-space:nowrap;box-shadow:0 9px 25px #0008}
+.back-system:hover{background:#2a4764}
+.earth-places:not([hidden]){display:block;margin-top:12px;border-top:1px solid #42516a;padding-top:10px}.earth-places small{font-size:10px;letter-spacing:1.2px;color:#9db2cf}.earth-places div{display:flex;gap:5px;margin-top:8px}.earth-places button{flex:1;background:#263648;color:#dceaff;padding:7px 3px;border:1px solid #435875;border-radius:6px;font-size:11px;cursor:pointer}.earth-places button:hover{background:#375271}
+#date-input{width:180px;min-width:0;padding:8px 9px;border:1px solid #3d4b5e;border-radius:7px;background:#171e29;color:#edf2fa;font-size:13px;font-family:var(--display)}#date-input:focus{outline:2px solid #d4a76b}
+#era-status{color:#a6bbce;white-space:nowrap;font-weight:600}.timeline-note{gap:9px;align-items:center}.timeline-note #scale-note{flex:1}
+.year-labels button{font-size:10px;white-space:nowrap}
+@media(max-width:900px){.view-options{max-width:calc(100vw - 30px)}.view-options button{font-size:11px;padding:0 6px}.timeline-note{flex-wrap:wrap}#era-status{font-size:10px}.back-system:not([hidden]){top:80px}}
+@media(max-width:560px){.view-options{left:10px;right:auto;max-width:calc(100vw - 20px)}.view-options button{font-size:10px;padding:0 5px}.view-options #earth-shortcut{font-size:10px}.back-system:not([hidden]){top:156px;font-size:10px;left:50%}#date-input{width:152px;font-size:11px;padding:7px 6px}.year-labels button{font-size:9px}.year-labels button:nth-child(even){display:none}.timeline-note #era-status{order:2;width:100%;font-size:10px}.timeline-note button{order:1}}
