@@ -26,3 +26,5 @@
 .support-close{position:absolute;top:8px;right:9px;width:30px;height:30px;color:#b7c3d3;font-size:25px;line-height:1}.support-close:hover{color:#fff}
 @media(max-width:900px){.support-popup{right:16px;bottom:252px}}
 @media(max-width:560px){.support-popup{right:14px;bottom:249px}.support-toggle{padding:8px 11px;font-size:12px}.support-card{width:240px}}
+#date-preset{max-width:165px;background:#171e29;border:1px solid #3c485a;color:#d9e0eb;border-radius:7px;padding:7px 6px;font-size:12px;cursor:pointer}
+@media(max-width:700px){#date-preset{max-width:105px;font-size:11px;padding:6px 3px}}

@@ -22,8 +22,15 @@ const icons={
 const icon=name=>`<svg viewBox="0 0 24 24" aria-hidden="true">${icons[name]||icons.info}</svg>`;
 document.querySelectorAll('[data-icon]').forEach(el=>el.innerHTML=icon(el.dataset.icon));
 const sun={id:'sun',name:'The Sun',kind:'Our local star',color:'#efbf83',radius:3.3,texture:'2k_sun.jpg',description:'The star at the heart of it all. Its gravity holds our planetary neighbourhood together.',fact:'The Sun contains about 99.8% of the solar system’s mass.'};
-const bodies=[sun,...planets];
-const state={date:Math.max(MIN_DATE,Math.min(MAX_DATE,Date.now())),playing:false,speed:10,direction:1,selected:'sun',following:null,scale:'compact',view:'overview'};
+const moon={id:'moon',name:'The Moon',kind:'Earth’s natural satellite',color:'#c7c7be',radius:.24,diameter:3475,period:27.3217,rotation:27.3217,tilt:6.68,texture:'2k_moon.jpg',description:'Earth’s only natural satellite. Its orbit here is illustrative.',fact:'The Moon orbits Earth about once every 27.3 days.'};
+const pluto={id:'pluto',name:'Pluto',kind:'Dwarf planet · illustrative orbit',color:'#baab9d',radius:.28,displayOrbit:81,diameter:2377,period:90560,rotation:-6.39,tilt:122.5,texture:'2k_pluto.jpg',description:'A distant dwarf planet in the Kuiper Belt. This orbit is illustrative and is not part of the JPL eight-planet approximation.',fact:'Pluto takes about 248 years to orbit the Sun.',base:[39.48,.2488,17.16,238.9,224.07,110.3],rate:[0,0,0,145.16,0,0]};
+const bodies=[sun,...planets,moon,pluto];
+const shareableIds=new Set(bodies.map(b=>b.id));
+let applyingHash=false;
+function syncHash(){if(applyingHash)return;const date=new Date(state.date).toISOString().slice(0,10);const hash='#date='+date+'&body='+state.selected;if(location.hash!==hash)history.replaceState(null,'',hash);}
+function readHash(){const data=new URLSearchParams(location.hash.slice(1));const date=parseDate(data.get('date')||'');const body=data.get('body');return {date,body:shareableIds.has(body)?body:null};}
+const initialHash=readHash();
+const state={date:initialHash.date??Math.max(MIN_DATE,Math.min(MAX_DATE,Date.now())),playing:false,speed:10,direction:1,selected:'sun',following:null,scale:'compact',view:'overview'};
 const reducedMotion=matchMedia('(prefers-reduced-motion: reduce)').matches;
 let renderer,scene,camera,controls,starField,flight=null,trackPosition=new THREE.Vector3(),lastTick=0,lastUI=0,lastOrbitDate=NaN,toastTimer,frameID,viewWidth=0,viewHeight=0;
 const objects=new Map(),orbitLines=new Map(),labels=new Map();
@@ -37,7 +44,8 @@ function stat(label,value,unit=''){return `<div class="stat"><small>${label}</sm
 function updateInspector(){
  const b=selectedBody();
  $('body-name').textContent=b.name;$('body-kind').textContent=b.kind.toUpperCase();$('body-description').textContent=b.description;$('body-fact').textContent=b.fact;
- if(b.id==='sun'){$('body-stats').innerHTML=stat('DIAMETER','1.39M','km')+stat('STAR TYPE','G2V')+stat('AGE','4.6B','years')+stat('SURFACE','5,500','°C');}
+ if(b.id==='moon'){$('body-stats').innerHTML=stat('MEAN DIAMETER','3,475','km')+stat('ORBITAL PERIOD','27.3','days')+stat('FROM EARTH','384,400','km')+stat('MODEL','Illustrative');}
+ else if(b.id==='sun'){$('body-stats').innerHTML=stat('DIAMETER','1.39M','km')+stat('STAR TYPE','G2V')+stat('AGE','4.6B','years')+stat('SURFACE','5,500','°C');}
  else{const p=position(b,state.date),distance=Math.hypot(...p),period=b.period<1000?Math.round(b.period):+(b.period/365.25).toFixed(1),unit=b.period<1000?'days':'years';
  $('body-stats').innerHTML=stat('MEAN DIAMETER',b.diameter.toLocaleString('en-US'),'km')+stat('ORBITAL PERIOD',period,unit)+stat('FROM THE SUN',distance.toFixed(2),'AU')+stat('LIGHT TRAVEL',(distance*8.31675).toFixed(1),'min');}
  $('focus-body').innerHTML=icon('target')+(state.following===b.id?'Following '+b.name.replace('The ',''):'Explore up close')+'<span>↗</span>';
@@ -48,11 +56,12 @@ function selectBody(id,{show=true}={}){
  document.querySelectorAll('.body-button').forEach(el=>{const active=el.dataset.body===id;el.classList.toggle('selected',active);el.setAttribute('aria-pressed',String(active));});
  labels.forEach((el,key)=>el.classList.toggle('selected',id===key));
  orbitLines.forEach((line,key)=>{line.material.opacity=id===key?.5:.17;line.material.color.set(id===key?selectedBody().color:'#778aa8');});
- updateInspector();if(show)showInformation(true);
+ updateInspector();syncHash();if(show)showInformation(true);
 }
 function makeBodyList(){
- $('body-list').innerHTML=bodies.map((b,i)=>`<button class="body-button${i===0?' selected':''}" data-body="${b.id}" aria-pressed="${i===0}" title="Select ${b.name}"><span class="body-dot" style="--body-color:${b.color}"></span><span>${b.name.replace('The ','')}</span><span class="body-order">${String(i).padStart(2,'0')}</span></button>`).join('');
- $('body-list').addEventListener('click',event=>{const button=event.target.closest('[data-body]');if(!button)return;selectBody(button.dataset.body);if(state.following)focusBody(button.dataset.body);});
+ $('body-count').textContent=($('pluto-toggle').checked?'11':'10')+' BODIES';
+ $('body-list').innerHTML=bodies.filter(b=>b.id!=='pluto'||$('pluto-toggle').checked).map((b,i)=>`<button class="body-button${b.id===state.selected?' selected':''}" data-body="${b.id}" aria-pressed="${b.id===state.selected}" title="Select ${b.name}"><span class="body-dot" style="--body-color:${b.color}"></span><span>${b.name.replace('The ','')}</span><span class="body-order">${String(i).padStart(2,'0')}</span></button>`).join('');
+ $('body-list').onclick=event=>{const button=event.target.closest('[data-body]');if(!button)return;selectBody(button.dataset.body);if(state.following)focusBody(button.dataset.body);};
 }
 function updateDateUI(force=false){
  if(force||document.activeElement!==$('date-input'))$('date-input').value=new Date(state.date).toISOString().slice(0,10);
@@ -63,16 +72,16 @@ function updateDateUI(force=false){
 }
 function setPlaying(value){
  state.playing=Boolean(value);$('play').innerHTML=icon(state.playing?'pause':'play');$('play').setAttribute('aria-label',state.playing?'Pause time':'Play time');
- $('play-state').textContent=state.playing?(state.direction<0?'REVERSE':'PLAYING'):'PAUSED';
+ $('play-state').textContent=state.playing?(state.direction<0?'REVERSE':'PLAYING'):'PAUSED';if(!state.playing)syncHash();
 }
 function setDirection(value){state.direction=value;$('reverse').classList.toggle('active',value<0);$('reverse').setAttribute('aria-pressed',String(value<0));setPlaying(state.playing);}
 function setDate(value,{pause=true}={}){
  if(!Number.isFinite(value))throw new Error('Invalid date.');
  state.date=Math.max(MIN_DATE,Math.min(MAX_DATE,value));if(pause)setPlaying(false);
- $('date-error').textContent='';updateDateUI(true);updatePositions();updateOrbitLines();updateInspector();
+ $('date-error').textContent='';updateDateUI(true);updatePositions();updateOrbitLines();updateInspector();syncHash();
 }
 function displayPosition(b,milliseconds,E){const p=position(b,milliseconds,E);const factor=state.scale==='compact'?b.displayOrbit/b.base[0]:10;return new THREE.Vector3(p[0]*factor,p[2]*factor,-p[1]*factor);}
-function makeTexture(loader,name){const texture=loader.load('./assets/'+name);texture.colorSpace=THREE.SRGBColorSpace;texture.anisotropy=Math.min(renderer.capabilities.getMaxAnisotropy(),8);return texture;}
+function makeTexture(loader,name){const source=name.endsWith('.jpg')?name.replace('2k_','1k_').replace('.jpg','.webp'):name;const texture=loader.load('./assets/'+source);texture.colorSpace=THREE.SRGBColorSpace;texture.anisotropy=Math.min(renderer.capabilities.getMaxAnisotropy(),8);return texture;}
 function makeGlow(){
  const canvas=document.createElement('canvas');canvas.width=canvas.height=128;
  const ctx=canvas.getContext('2d'),g=ctx.createRadialGradient(64,64,0,64,64,64);
@@ -91,8 +100,8 @@ function createObjects(loader){
  const sphere=new THREE.SphereGeometry(1,64,40);
  bodies.forEach(b=>{
   const root=new THREE.Group(),tilt=new THREE.Group();tilt.rotation.z=(b.tilt||7.25)*Math.PI/180;root.add(tilt);
-  const map=makeTexture(loader,b.texture);
-  const mat=b.id==='sun'?new THREE.MeshBasicMaterial({map,color:0xffe3b4}):new THREE.MeshStandardMaterial({map,roughness:1,metalness:0});
+  const map=(b.id==='moon'||b.id==='pluto')?null:makeTexture(loader,b.texture);
+  const mat=b.id==='sun'?new THREE.MeshBasicMaterial({map,color:0xffe3b4}):new THREE.MeshStandardMaterial({map,color:map?0xffffff:b.color,roughness:1,metalness:0});
   const mesh=new THREE.Mesh(sphere,mat);mesh.scale.setScalar(b.radius);mesh.userData.body=b.id;tilt.add(mesh);scene.add(root);
   if(b.id==='sun')root.add(makeGlow());
   if(b.id==='earth'){
@@ -105,7 +114,7 @@ function createObjects(loader){
   }
   objects.set(b.id,{root,mesh,tilt,body:b});
   const label=document.createElement('span');label.className='planet-label';label.textContent=b.name.replace('The ','');$('labels').append(label);labels.set(b.id,label);
-  if(b.id!=='sun'){
+  if(b.id!=='sun'&&b.id!=='moon'){
    const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.BufferAttribute(new Float32Array(361*3),3));
    const line=new THREE.LineLoop(geometry,new THREE.LineBasicMaterial({color:0x778aa8,transparent:true,opacity:.17,depthWrite:false}));scene.add(line);orbitLines.set(b.id,line);
   }
@@ -113,11 +122,12 @@ function createObjects(loader){
  updatePositions();updateOrbitLines();
 }
 function updatePositions(){
- planets.forEach(b=>{const item=objects.get(b.id);if(!item)return;item.root.position.copy(displayPosition(b,state.date));item.mesh.rotation.y=((state.date/DAY/b.rotation)%1)*Math.PI*2;});
+ [...planets,pluto].forEach(b=>{const item=objects.get(b.id);if(!item)return;item.root.position.copy(displayPosition(b,state.date));item.mesh.rotation.y=((state.date/DAY/b.rotation)%1)*Math.PI*2;});
+ const earth=objects.get('earth'),satellite=objects.get('moon');if(earth&&satellite){const angle=(state.date-Date.UTC(2000,0,1))/DAY/27.3217*Math.PI*2;satellite.root.position.copy(earth.root.position).add(new THREE.Vector3(1.55*Math.cos(angle),.14*Math.sin(angle*.91),1.55*Math.sin(angle)));satellite.mesh.rotation.y=angle;}
  const star=objects.get('sun');if(star)star.mesh.rotation.y=((state.date/DAY/25.38)%1)*Math.PI*2;
 }
 function updateOrbitLines(){
- planets.forEach(b=>{const line=orbitLines.get(b.id);if(!line)return;const attr=line.geometry.attributes.position;
+ [...planets,pluto].forEach(b=>{const line=orbitLines.get(b.id);if(!line)return;const attr=line.geometry.attributes.position;
   for(let i=0;i<361;i++){const p=displayPosition(b,state.date,i/360*Math.PI*2);attr.setXYZ(i,p.x,p.y,p.z);}attr.needsUpdate=true;line.geometry.computeBoundingSphere();
  });lastOrbitDate=state.date;
 }
@@ -129,7 +139,7 @@ function flyTo(target,offset,follow=null){
 }
 function setView(mode='overview'){
  state.view=mode;state.following=null;controls.enablePan=true;
- const maxRadius=state.scale==='actual'?307:72;
+ const maxRadius=state.scale==='actual'?($('pluto-toggle').checked?400:307):($('pluto-toggle').checked?86:72);
  const mobile=innerWidth<900;const aspect=Math.max(.55,camera.aspect);
  let distance=maxRadius*(mobile?2.1:1.72)*Math.max(1,1.25/aspect);
  if(mode==='inner')distance=state.scale==='actual'?48:53;
@@ -156,7 +166,7 @@ function updateLabels(){
  const box=$('scene').getBoundingClientRect(),parent=$('universe').getBoundingClientRect();
  objects.forEach((item,id)=>{
   const label=labels.get(id);projected.copy(item.root.position).project(camera);
-  const visible=projected.z>-1&&projected.z<1&&Math.abs(projected.x)<1&&Math.abs(projected.y)<1&&state.following!==id;
+  const visible=(id!=='pluto'||$('pluto-toggle').checked)&&projected.z>-1&&projected.z<1&&Math.abs(projected.x)<1&&Math.abs(projected.y)<1&&state.following!==id;
   label.hidden=!visible;if(visible){label.style.left=((projected.x+1)*viewWidth/2+box.left-parent.left)+'px';label.style.top=((-projected.y+1)*viewHeight/2+box.top-parent.top)+'px';}
  });
 }
@@ -182,16 +192,18 @@ function tick(now){
 }
 function hitTest(event){
  const rect=renderer.domElement.getBoundingClientRect();pointer.set((event.clientX-rect.left)/rect.width*2-1,-((event.clientY-rect.top)/rect.height)*2+1);
- raycaster.setFromCamera(pointer,camera);const meshes=[];objects.forEach(o=>o.root.traverse(child=>{if(child.userData.body)meshes.push(child);}));
+ raycaster.setFromCamera(pointer,camera);const meshes=[];objects.forEach(o=>o.root.traverse(child=>{if(child.userData.body&&(child.userData.body!=='pluto'||$('pluto-toggle').checked))meshes.push(child);}));
  const hit=raycaster.intersectObjects(meshes,false)[0];if(hit)return hit.object.userData.body;
  // A small screen-space hit target keeps distant planets easy to select.
  let closest=null,best=18;
- objects.forEach((o,id)=>{const p=o.root.position.clone().project(camera);if(p.z< -1||p.z>1)return;const d=Math.hypot((p.x+1)*rect.width/2+rect.left-event.clientX,(-p.y+1)*rect.height/2+rect.top-event.clientY);if(d<best){closest=id;best=d;}});return closest;
+ objects.forEach((o,id)=>{if(id==='pluto'&&!$('pluto-toggle').checked)return;const p=o.root.position.clone().project(camera);if(p.z< -1||p.z>1)return;const d=Math.hypot((p.x+1)*rect.width/2+rect.left-event.clientX,(-p.y+1)*rect.height/2+rect.top-event.clientY);if(d<best){closest=id;best=d;}});return closest;
 }
 function connectUI(){
  $('play').onclick=()=>setPlaying(!state.playing);$('reverse').onclick=()=>{setDirection(-state.direction);notify(state.direction<0?'Time direction: backward':'Time direction: forward');};
  $('back-day').onclick=()=>setDate(state.date-DAY);$('next-day').onclick=()=>setDate(state.date+DAY);
  $('today').onclick=()=>{setDate(Date.now());notify('Returned to today');};
+ $('date-preset').onchange=()=>{const value=parseDate($('date-preset').value);if(value!==null)setDate(value);$('date-preset').value='';};
+ $('pluto-toggle').onchange=()=>{const show=$('pluto-toggle').checked;objects.get('pluto').root.visible=show;orbitLines.get('pluto').visible=show&&$('orbits-toggle').checked;labels.get('pluto').hidden=!show;if(!show&&state.selected==='pluto')selectBody('sun');makeBodyList();setView('overview');};
  $('date-input').addEventListener('focus',()=>setPlaying(false));
  $('date-input').addEventListener('change',()=>{const value=parseDate($('date-input').value);if(value===null){$('date-error').textContent='Choose a valid date from AD 1000 to AD 3000.';return;}setDate(value);});
  $('date-input').addEventListener('blur',()=>{if(parseDate($('date-input').value)===null){updateDateUI(true);}});
@@ -201,7 +213,7 @@ function connectUI(){
  $('overview').onclick=()=>setView('overview');$('inner-view').onclick=()=>setView('inner');$('top-view').onclick=()=>setView('top');$('reset-view').onclick=()=>setView('overview');
  $('focus-body').onclick=()=>focusBody();$('close-info').onclick=()=>showInformation(false);$('show-info').onclick=()=>showInformation(true);
  $('zoom-in').onclick=()=>zoom(.78);$('zoom-out').onclick=()=>zoom(1.28);
- $('orbits-toggle').onchange=()=>orbitLines.forEach(line=>line.visible=$('orbits-toggle').checked);
+ $('orbits-toggle').onchange=()=>orbitLines.forEach((line,id)=>line.visible=$('orbits-toggle').checked&&(id!=='pluto'||$('pluto-toggle').checked));
  $('stars-toggle').onchange=()=>starField.visible=$('stars-toggle').checked;
  $('labels-toggle').onchange=()=>updateLabels();
  $('scale-mode').onchange=()=>setScale($('scale-mode').value);
@@ -211,6 +223,7 @@ function connectUI(){
  $('guide').addEventListener('click',event=>{if(event.target===$('guide')){const box=$('guide').getBoundingClientRect();if(event.clientX<box.left||event.clientX>box.right||event.clientY<box.top||event.clientY>box.bottom)$('guide').close();}});
  document.addEventListener('keydown',event=>{
   if($('guide').open||event.altKey||event.metaKey||event.ctrlKey||/^(INPUT|SELECT|TEXTAREA|BUTTON|A)$/.test(event.target.tagName))return;
+  if(['KeyW','KeyA','KeyS','KeyD'].includes(event.code)){event.preventDefault();flight=null;const offset=camera.position.clone().sub(controls.target);const spherical=new THREE.Spherical().setFromVector3(offset);spherical.theta+=event.code==='KeyA'?.12:event.code==='KeyD'?-.12:0;spherical.phi=Math.max(.05,Math.min(Math.PI-.05,spherical.phi+(event.code==='KeyW'?.12:event.code==='KeyS'?-.12:0)));camera.position.copy(controls.target).add(new THREE.Vector3().setFromSpherical(spherical));controls.update();return;}
   if(event.code==='Space'){event.preventDefault();setPlaying(!state.playing);}
   if(event.key==='ArrowLeft'){event.preventDefault();setDate(state.date-DAY);}
   if(event.key==='ArrowRight'){event.preventDefault();setDate(state.date+DAY);}
@@ -263,7 +276,7 @@ function start(){
  const manager=new THREE.LoadingManager();manager.onProgress=(_,loaded,total)=>$('load-status').textContent=`Preparing planets · ${loaded} / ${total}`;
  manager.onError=url=>assetErrors.push(url);
  manager.onLoad=()=>{$('loading').hidden=true;if(assetErrors.length)notify('Some surface maps could not load. Reload to try again.');};
- createObjects(new THREE.TextureLoader(manager));makeBodyList();selectBody('sun',{show:false});resize();connectUI();updateDateUI(true);setView('overview');
+ createObjects(new THREE.TextureLoader(manager));objects.get('pluto').root.visible=initialHash.body==='pluto';orbitLines.get('pluto').visible=initialHash.body==='pluto';$('pluto-toggle').checked=initialHash.body==='pluto';selectBody(initialHash.body||'sun',{show:false});makeBodyList();resize();connectUI();updateDateUI(true);setView('overview');window.addEventListener('hashchange',()=>{const next=readHash();applyingHash=true;try{if(next.date!==null)setDate(next.date);if(next.body){if(next.body==='pluto'&&!$('pluto-toggle').checked)$('pluto-toggle').click();selectBody(next.body);}}finally{applyingHash=false;}});
  if(innerWidth<=560)showInformation(false);
  new ResizeObserver(()=>{resize();}).observe($('scene'));
  window.addEventListener('pagehide',()=>{cancelAnimationFrame(frameID);controls.dispose();renderer.dispose();},{once:true});
