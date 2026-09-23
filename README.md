@@ -27,27 +27,23 @@ Open **http://localhost:8080** in a browser with WebGL2 enabled. Alternatively, 
 
 Do not open `index.html` directly with a `file://` URL: JavaScript modules should be served over HTTP.
 
-## Add this project to GitHub
+## Repository
 
-1. Create a repository named `solar-atlas` in your GitHub account.
-2. Extract this archive.
-3. Upload the **contents** of the `solar-atlas` folder, including its subfolders. `index.html` should be at the repository root.
-4. Commit the files to `main`.
+This project is maintained at [dcr6174/solar-atlas](https://github.com/dcr6174/solar-atlas). Clone it with:
 
-You can also use GitHub Desktop: **File → Add local repository**, choose the extracted folder, create a repository there if prompted, and select **Publish repository**. Choose the visibility you want before publishing.
+```bash
+git clone https://github.com/dcr6174/solar-atlas.git
+cd solar-atlas
+npm start
+```
 
-## Optional: publish on GitHub Pages
+## GitHub Pages
 
-The project uses relative asset paths and is ready for GitHub Pages.
+Once GitHub Pages is enabled for this repository, the live site will be available at `https://dcr6174.github.io/solar-atlas/`. To enable it, open **Settings → Pages**, select **Deploy from a branch**, then choose **main** and **/(root)**. The site uses relative asset paths and includes `.nojekyll`.
 
-1. In the repository, open **Settings → Pages**.
-2. Set **Source** to **Deploy from a branch**.
-3. Choose **main** and **/(root)**, then save.
-4. Wait for GitHub's deployment and open the URL shown in Pages settings.
+GitHub currently requires this repository to be public (or an eligible paid plan) for Pages. The link above is the expected address, not an active deployment until Pages settings show a successful publication.
 
-Pages availability for private repositories depends on your GitHub plan. The website may be publicly accessible even when its repository is private. The `.nojekyll` file disables Jekyll processing.
-
-Official instructions: https://docs.github.com/en/pages/getting-started-with-github-pages/configuring-a-publishing-source-for-your-github-pages-site
+[GitHub Pages publishing instructions](https://docs.github.com/en/pages/getting-started-with-github-pages/configuring-a-publishing-source-for-your-github-pages-site)
 
 ## Controls
 
