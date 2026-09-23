@@ -1,10 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { planets, position, elements, parseDate, MIN_DATE, MAX_DATE, DAY } from '../orbits.js';
-import { JPL_MAX, utcDate, formatDate, sliderToTime, timeToSlider } from '../timeline.js';
+import { JPL_MAX, TOTAL_DAYS, utcDate, formatDate, sliderToTime, timeToSlider } from '../timeline.js';
 
 test('every planet stays on its orbital ellipse throughout the fitted and displayed dates', () => {
-  for (const planet of planets) for (const year of [-999, 0, 1000, 2000, 3000, 5000, 10000]) {
+  for (const planet of planets) for (const year of [-9999, -4999, -999, 0, 1000, 2000, 3000, 5000, 10000]) {
     const time = utcDate(year);
     const coordinates = position(planet, time);
     const { a, e } = elements(planet, time);
@@ -16,21 +16,22 @@ test('every planet stays on its orbital ellipse throughout the fitted and displa
   }
 });
 
-test('calendar spans 1000 BCE to 10000 CE without year zero', () => {
-  assert.equal(parseDate('1000-01-01 BCE'), MIN_DATE);
+test('calendar spans 10000 BCE to 10000 CE without year zero', () => {
+  assert.equal(parseDate('10000-01-01 BCE'), MIN_DATE);
   assert.equal(parseDate('10000-12-31 CE'), MAX_DATE);
   assert.equal(formatDate(parseDate('0001-12-31 BCE') + DAY), '0001-01-01 CE');
   assert.equal(formatDate(parseDate('0044-03-15 BCE')), '0044-03-15 BCE');
-  for (const invalid of ['1001-01-01 BCE','10001-01-01 CE','0000-01-01 CE','2026-02-30','1900-02-29','abc','2026-13-01']) assert.equal(parseDate(invalid), null);
+  for (const invalid of ['10001-01-01 BCE','10001-01-01 CE','0000-01-01 CE','2026-02-30','1900-02-29','abc','2026-13-01']) assert.equal(parseDate(invalid), null);
   assert.notEqual(parseDate('2000-02-29'), null);
 });
 
 test('slider covers both calendar endpoints and shareable dates', () => {
   assert.equal(sliderToTime(0), MIN_DATE);
-  assert.equal(sliderToTime(100000), MAX_DATE);
-  for (const date of [MIN_DATE,parseDate('0044-03-15 BCE'),utcDate(2000),JPL_MAX,MAX_DATE]) {
-    assert(Math.abs(sliderToTime(timeToSlider(date))-date)<DAY);
+  assert.equal(sliderToTime(TOTAL_DAYS), MAX_DATE);
+  for (const date of [MIN_DATE,parseDate('5000-01-01 BCE'),parseDate('0044-03-15 BCE'),parseDate('0001-12-31 BCE'),parseDate('0001-01-01 CE'),utcDate(2000),JPL_MAX,MAX_DATE]) {
+    assert.equal(sliderToTime(timeToSlider(date)),date,`${formatDate(date)} maps exactly to its slider step`);
   }
+  assert.equal(sliderToTime(timeToSlider(parseDate('0044-03-15 BCE'))+1),parseDate('0044-03-16 BCE'));
 });
 
 test('Earth J2000 coordinates pass an independent approximate sanity check', () => {

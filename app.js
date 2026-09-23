@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from './assets/OrbitControls.js';
 import { planets, position, elements, DAY, MIN_DATE, MAX_DATE, parseDate } from './orbits.js';
-import { JPL_MAX, formatDate, dateKey, sliderToTime, timeToSlider, utcDate } from './timeline.js';
+import { JPL_MIN, JPL_MAX, TOTAL_DAYS, formatDate, dateKey, sliderToTime, timeToSlider, utcDate } from './timeline.js';
 
 const $=id=>document.getElementById(id);
 const icons={
@@ -70,10 +70,10 @@ function makeBodyList(){
 function updateDateUI(force=false){
  const label=formatDate(state.date),progress=timeToSlider(state.date);
  if(force||document.activeElement!==$('date-input'))$('date-input').value=label;
- $('time-slider').value=Math.round(progress);$('time-slider').style.setProperty('--progress',progress/1000+'%');
+ $('time-slider').value=progress;$('time-slider').style.setProperty('--progress',progress/TOTAL_DAYS*100+'%');
  $('time-slider').setAttribute('aria-valuetext',label);
  $('back-day').disabled=state.date<=MIN_DATE;$('next-day').disabled=state.date>=MAX_DATE;
- const valid=state.date<=JPL_MAX;
+ const valid=state.date>=JPL_MIN&&state.date<=JPL_MAX;
  $('era-status').textContent=valid?'JPL approximate orbits':'Illustrative orbits · outside JPL dates';
  $('era-status').title=valid?'Approximate orbital solution valid 3000 BCE–3000 CE':'Outside JPL’s fitted interval. The planet positions are illustrative.';
 }
@@ -185,7 +185,7 @@ function updateLabels(){
 function tick(now){
  const delta=lastTick?Math.min((now-lastTick)/1000,.1):0;lastTick=now;
  if(state.playing&&!document.hidden){
-  const next=state.date+delta*state.speed*state.direction*DAY;state.date=Math.min(MAX_DATE,Math.max(MIN_DATE,next));if(next<=MIN_DATE||next>=MAX_DATE){setPlaying(false);notify(next<=MIN_DATE?'Reached 1000 BCE. Reverse direction to continue.':'Reached 10,000 CE. Reverse direction to continue.');}
+  const next=state.date+delta*state.speed*state.direction*DAY;state.date=Math.min(MAX_DATE,Math.max(MIN_DATE,next));if(next<=MIN_DATE||next>=MAX_DATE){setPlaying(false);notify(next<=MIN_DATE?'Reached 10,000 BCE. Reverse direction to continue.':'Reached 10,000 CE. Reverse direction to continue.');}
   updatePositions();if(Math.abs(visualTime()-lastOrbitDate)>DAY*365.25*2)updateOrbitLines();
  }
  if(flight){
@@ -215,7 +215,7 @@ function connectUI(){
  $('moon-toggle').onchange=()=>showOptionalBody('moon',$('moon-toggle').checked);
  $('pluto-toggle').onchange=()=>{showOptionalBody('pluto',$('pluto-toggle').checked);setView('overview');};
  $('date-input').addEventListener('focus',()=>setPlaying(false));
- $('date-input').addEventListener('change',()=>{const value=parseDate($('date-input').value);if(value===null){$('date-error').textContent='Enter YYYY-MM-DD BCE or CE, from 1000 BCE to 10,000 CE.';return;}setDate(value);});
+ $('date-input').addEventListener('change',()=>{const value=parseDate($('date-input').value);if(value===null){$('date-error').textContent='Enter YYYY-MM-DD BCE or CE, from 10,000 BCE to 10,000 CE.';return;}setDate(value);});
  $('date-input').addEventListener('blur',()=>{if(parseDate($('date-input').value)===null){updateDateUI(true);}});
  $('date-input').addEventListener('keydown',event=>{if(event.key==='Enter'){$('date-input').blur();}});
  $('time-slider').oninput=()=>setDate(sliderToTime($('time-slider').value));
@@ -260,11 +260,11 @@ function setScale(value){
 function registerAgentTools(){
  if(!document.modelContext?.registerTool)return;
  const lifecycle=new AbortController();window.addEventListener('pagehide',()=>lifecycle.abort(),{once:true});
- const schema={type:'object',properties:{date:{type:'string',description:'Calendar date YYYY-MM-DD BCE or CE, from 1000 BCE to 10000 CE'},body:{type:'string',enum:bodies.map(x=>x.id)},view:{type:'string',enum:['overview','inner','top','focus']},playing:{type:'boolean'},direction:{type:'integer',enum:[-1,1]},daysPerSecond:{type:'number',minimum:0.000011574,maximum:3652.5}},additionalProperties:false};
+ const schema={type:'object',properties:{date:{type:'string',description:'Calendar date YYYY-MM-DD BCE or CE, from 10000 BCE to 10000 CE'},body:{type:'string',enum:bodies.map(x=>x.id)},view:{type:'string',enum:['overview','inner','top','focus']},playing:{type:'boolean'},direction:{type:'integer',enum:[-1,1]},daysPerSecond:{type:'number',minimum:0.000011574,maximum:3652.5}},additionalProperties:false};
  try{Promise.resolve(document.modelContext.registerTool({name:'configure_solar_system',title:'Explore the solar system',description:'Set the visible date, selected body, camera view, and time playback in Solar Atlas.',inputSchema:schema,annotations:{readOnlyHint:false,untrustedContentHint:false},async execute(input){
   if(!input||typeof input!=='object'||Array.isArray(input))throw new Error('Expected an object.');
   const allowed=Object.keys(schema.properties);if(Object.keys(input).some(k=>!allowed.includes(k)))throw new Error('Unknown option.');
-  const date=input.date===undefined?undefined:parseDate(input.date);if(date===null)throw new Error('Enter a date from 1000 BCE to 10000 CE.');
+  const date=input.date===undefined?undefined:parseDate(input.date);if(date===null)throw new Error('Enter a date from 10000 BCE to 10000 CE.');
   if(input.body!==undefined&&!bodies.some(b=>b.id===input.body))throw new Error('Unknown body.');
   if(input.view!==undefined&&!['overview','inner','top','focus'].includes(input.view))throw new Error('Unknown view.');
   if(input.playing!==undefined&&typeof input.playing!=='boolean')throw new Error('playing must be boolean.');

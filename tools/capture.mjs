@@ -20,12 +20,16 @@ try{
  await page.locator('#support-close').click();
  if(await page.locator('#support-card').isVisible())throw Error('Support card did not close');
  if(await page.locator('#earth-shortcut, #earth-surface, #earth-places').count())throw Error('Removed Earth controls remain on desktop');
- await page.locator('[data-year="-999"]').click();
- if(!page.url().includes('date=1000-01-01-BCE'))throw Error('1000 BCE slider endpoint is broken');
+ await page.locator('[data-year="-9999"]').click();
+ if(!page.url().includes('date=10000-01-01-BCE')||await page.locator('#date-input').inputValue()!=='10000-01-01 BCE'||await page.locator('#time-slider').inputValue()!=='0')throw Error('10000 BCE date and slider are out of sync');
  await page.locator('#time-slider').press('End');
- if(!page.url().includes('date=10000-12-31-CE'))throw Error('10000 CE slider endpoint is broken');
+ if(!page.url().includes('date=10000-12-31-CE')||await page.locator('#date-input').inputValue()!=='10000-12-31 CE')throw Error('10000 CE slider and date are out of sync');
  await page.locator('#date-input').fill('0044-03-15 BCE');await page.locator('#date-input').press('Tab');
  if(!page.url().includes('date=0044-03-15-BCE'))throw Error('BCE date is not shareable');
+ const before=await page.locator('#time-slider').inputValue();await page.locator('#time-slider').press('ArrowRight');
+ if(await page.locator('#date-input').inputValue()!=='0044-03-16 BCE'||Number(await page.locator('#time-slider').inputValue())!==Number(before)+1)throw Error('Slider should advance the date by exactly one day');
+ await page.locator('#time-slider').press('ArrowLeft');
+ if(await page.locator('#date-input').inputValue()!=='0044-03-15 BCE')throw Error('Date and slider did not return to the same day');
  await page.locator('#date-input').fill('10000-12-31 CE');await page.locator('#date-input').press('Tab');
  if(!page.url().includes('date=10000-12-31-CE'))throw Error('Calendar endpoint is broken');
  await page.locator('#date-input').fill('1969-07-20 CE');await page.locator('#date-input').press('Tab');
@@ -54,6 +58,6 @@ try{
  if(await small.evaluate(()=>document.documentElement.scrollWidth>innerWidth))throw Error('Mobile layout overflows viewport');
  await small.locator('#body-list [data-body="moon"]').count().then(count=>{if(count)throw Error('Moon should also start hidden on mobile');});
  await small.locator('#close-info').click();await small.locator('#time-slider').press('Home');
- if(!small.url().includes('date=1000-01-01-BCE'))throw Error('Mobile timeline endpoint is broken');
+ if(!small.url().includes('date=10000-01-01-BCE')||await small.locator('#date-input').inputValue()!=='10000-01-01 BCE')throw Error('Mobile timeline and date are out of sync');
  await mobile.close();
 }finally{await browser.close();server.close();}

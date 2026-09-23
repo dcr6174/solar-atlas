@@ -1,6 +1,6 @@
 # Solar Atlas
 
-Explore the solar system in 3D, from **1000 BCE to 10,000 CE**. Follow the eight planets, optionally show Earth's Moon and Pluto, and explore the solar system on desktop or mobile.
+Explore the solar system in 3D, from **10,000 BCE to 10,000 CE**. Follow the eight planets, optionally show Earth's Moon and Pluto, and explore the solar system on desktop or mobile.
 
 [**Open Solar Atlas**](https://dcr6174.github.io/solar-atlas/) · [Support the project](https://buymeacoffee.com/dcr6174)
 
@@ -17,7 +17,7 @@ Desktop capture from the responsive interactive WebGL2 app:
 - Drag, swipe, or use **W A S D** to rotate the camera; scroll or pinch to zoom. Click a body or choose it from the list.
 - Follow planets up close and switch between overview, inner planets, and top views. Earth's close-up and region selectors have been removed.
 - The desktop and mobile layouts adapt automatically to screen size. On mobile, the planet selector scrolls horizontally and details open as a compact panel.
-- Scrub calendar time from 1000 BCE through 10,000 CE. Type a date such as `0044-03-15 BCE` or `10000-12-31 CE`. Play or reverse at adjustable speeds.
+- Scrub calendar time from 10,000 BCE through 10,000 CE. Type a date such as `0044-03-15 BCE` or `10000-12-31 CE`. The slider moves in one-day steps and stays aligned with the date field. Play or reverse at adjustable speeds.
 - Copy the browser URL to share the selected body and date, for example [`#date=1969-07-20-CE&body=earth`](https://dcr6174.github.io/solar-atlas/#date=1969-07-20-CE&body=earth).
 - Toggle the Moon, Pluto, orbital paths, labels, and stars. Choose compact or proportional orbital distance.
 - Install the progressive web app from a supported browser; once the app has loaded online, its core interface and planet textures can open offline.
@@ -67,11 +67,11 @@ npm test
 npm run check
 ```
 
-Tests cover the eight planets' orbital bounds across the JPL fitted 3000 BCE–3000 CE interval, BCE/CE and leap-year validation, 1000 BCE–10,000 CE slider boundaries, and an Earth J2000 sanity check. Browser visual behavior requires a WebGL2 browser and is separate from these checks.
+Tests cover the eight planets' orbital bounds across the JPL fitted 3000 BCE–3000 CE interval, BCE/CE and leap-year validation, 10,000 BCE–10,000 CE slider boundaries, and an Earth J2000 sanity check. Browser visual behavior requires a WebGL2 browser and is separate from these checks.
 
 ## Scientific scope
 
-The eight planet positions use [NASA JPL's long-range approximate Keplerian elements](https://ssd.jpl.nasa.gov/planets/approx_pos.html), including Jupiter–Neptune corrections. **Those elements are fitted for 3000 BCE–3000 CE only.** After 3000 CE, orbital positions are illustrative extrapolations. Earth uses the Earth–Moon barycenter. The Moon's position around Earth and Pluto's orbit are **illustrative**, outside this eight-planet JPL model. Their size and spacing are enlarged so they remain visible.
+The eight planet positions use [NASA JPL's long-range approximate Keplerian elements](https://ssd.jpl.nasa.gov/planets/approx_pos.html), including Jupiter–Neptune corrections. **Those elements are fitted for 3000 BCE–3000 CE only.** Before 3000 BCE and after 3000 CE, orbital positions are illustrative extrapolations. Earth uses the Earth–Moon barycenter. The Moon's position around Earth and Pluto's orbit are **illustrative**, outside this eight-planet JPL model. Their size and spacing are enlarged so they remain visible.
 
 This educational visualization is not a precision ephemeris or eclipse predictor. Dates use the proleptic Gregorian calendar and UTC as an approximation for ephemeris time. Compact mode compresses distances; rotations, orientations, surface maps, and ancient appearances are illustrative. The present-day Earth texture is reused for historical dates.
 
