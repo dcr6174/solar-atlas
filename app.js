@@ -33,7 +33,7 @@ function readHash(){const data=new URLSearchParams(location.hash.slice(1));const
 const initialHash=readHash();
 const state={date:initialHash.date??Math.max(MIN_DATE,Math.min(MAX_DATE,Date.now())),playing:false,speed:10,direction:1,selected:'sun',following:null,scale:'compact',view:'overview'};
 const reducedMotion=matchMedia('(prefers-reduced-motion: reduce)').matches;
-let renderer,scene,camera,controls,starField,flight=null,trackPosition=new THREE.Vector3(),lastTick=0,lastUI=0,lastOrbitDate=NaN,toastTimer,frameID,viewWidth=0,viewHeight=0;
+let renderer,scene,camera,controls,starField,selectionGlow,flight=null,trackPosition=new THREE.Vector3(),lastTick=0,lastUI=0,lastOrbitDate=NaN,toastTimer,frameID,viewWidth=0,viewHeight=0;
 const objects=new Map(),orbitLines=new Map(),labels=new Map();
 const raycaster=new THREE.Raycaster(),pointer=new THREE.Vector2(),projected=new THREE.Vector3();
 const assetErrors=[];
@@ -58,7 +58,9 @@ function selectBody(id,{show=true}={}){
  state.selected=id;
  document.querySelectorAll('.body-button').forEach(el=>{const active=el.dataset.body===id;el.classList.toggle('selected',active);el.setAttribute('aria-pressed',String(active));});
  labels.forEach((el,key)=>el.classList.toggle('selected',id===key));
- orbitLines.forEach((line,key)=>{line.material.opacity=id===key?.5:.17;line.material.color.set(id===key?selectedBody().color:'#778aa8');});
+ // Keep orbital paths quiet; selection is shown on the planet itself.
+ orbitLines.forEach(line=>{line.material.opacity=.17;line.material.color.set('#778aa8');});
+ if(selectionGlow){const item=objects.get(id);item.root.add(selectionGlow);selectionGlow.material.color.set(id==='sun'?'#ffd394':selectedBody().color);selectionGlow.scale.setScalar(item.body.radius*(id==='sun'?4.8:4.2));selectionGlow.visible=true;}
  updateInspector();syncHash();if(show)showInformation(true);
 }
 function makeBodyList(){
@@ -71,6 +73,7 @@ function updateDateUI(force=false){
  if(force||document.activeElement!==$('date-input'))$('date-input').value=label;
  $('time-slider').value=progress;$('time-slider').style.setProperty('--progress',progress/TOTAL_DAYS*100+'%');
  $('time-slider').setAttribute('aria-valuetext',label);
+ $('cinema-date').textContent=label;
  $('back-day').disabled=state.date<=MIN_DATE;$('next-day').disabled=state.date>=MAX_DATE;
  const valid=state.date>=JPL_MIN&&state.date<=JPL_MAX;
  $('era-status').textContent=valid?'JPL approximate orbits':'Illustrative orbits · outside JPL dates';
@@ -96,6 +99,13 @@ function makeGlow(){
  ctx.fillStyle=g;ctx.fillRect(0,0,128,128);
  const glow=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(canvas),color:0xffd096,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false}));glow.scale.set(23,23,1);return glow;
 }
+function makeSelectionGlow(){
+ const canvas=document.createElement('canvas');canvas.width=canvas.height=128;
+ const ctx=canvas.getContext('2d'),g=ctx.createRadialGradient(64,64,24,64,64,64);
+ g.addColorStop(0,'rgba(255,255,255,0)');g.addColorStop(.34,'rgba(255,255,255,.14)');g.addColorStop(.58,'rgba(255,255,255,.11)');g.addColorStop(1,'rgba(255,255,255,0)');
+ ctx.fillStyle=g;ctx.fillRect(0,0,128,128);
+ return new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(canvas),transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,depthTest:true}));
+}
 function makeStars(){
  const array=new Float32Array(4500*3),colors=new Float32Array(4500*3);let seed=8712;
  const random=()=>{seed=(seed*16807)%2147483647;return(seed-1)/2147483646;};
@@ -105,6 +115,7 @@ function makeStars(){
 }
 function createObjects(loader){
  const sphere=new THREE.SphereGeometry(1,64,40);
+ selectionGlow=makeSelectionGlow();
  bodies.forEach(b=>{
   const root=new THREE.Group(),tilt=new THREE.Group();tilt.rotation.z=(b.tilt||7.25)*Math.PI/180;root.add(tilt);
   const map=(b.id==='moon'||b.id==='pluto')?null:makeTexture(loader,b.texture);
@@ -227,7 +238,9 @@ function connectUI(){
  $('labels-toggle').onchange=()=>updateLabels();
  $('scale-mode').onchange=()=>setScale($('scale-mode').value);
  $('fullscreen').onclick=async()=>{try{if(document.fullscreenElement)await document.exitFullscreen();else if(document.documentElement.requestFullscreen)await document.documentElement.requestFullscreen();else notify('Fullscreen is unavailable in this browser.');}catch{notify('Fullscreen is unavailable in this view.');}};
- document.addEventListener('fullscreenchange',()=>$('fullscreen').setAttribute('aria-label',document.fullscreenElement?'Exit fullscreen':'Enter fullscreen'));
+ const setTimelineExpanded=open=>{const expanded=Boolean(open&&document.fullscreenElement);document.documentElement.classList.toggle('timeline-expanded',expanded);$('timeline-toggle').setAttribute('aria-expanded',String(expanded));$('timeline-toggle').setAttribute('aria-label',expanded?'Collapse timeline':'Expand timeline');};
+ $('timeline-toggle').onclick=()=>setTimelineExpanded(!document.documentElement.classList.contains('timeline-expanded'));
+ document.addEventListener('fullscreenchange',()=>{const active=Boolean(document.fullscreenElement);document.documentElement.classList.toggle('cinema',active);$('fullscreen').setAttribute('aria-label',active?'Exit fullscreen':'Enter fullscreen');$('fullscreen').title=active?'Exit fullscreen':'Fullscreen';setTimelineExpanded(false);if(active&&$('support-card'))$('support-card').hidden=true;resize();});
  const openGuide=()=>{setPlaying(false);$('guide').showModal();};$('help').onclick=openGuide;$('model-info').onclick=openGuide;$('close-guide').onclick=()=>$('guide').close();
  $('guide').addEventListener('click',event=>{if(event.target===$('guide')){const box=$('guide').getBoundingClientRect();if(event.clientX<box.left||event.clientX>box.right||event.clientY<box.top||event.clientY>box.bottom)$('guide').close();}});
  document.addEventListener('keydown',event=>{

@@ -57,3 +57,29 @@
 }
 @media(max-width:360px){.view-options button{min-width:64px;font-size:10px}.year-labels button{font-size:8px}.timeline-top{grid-template-columns:minmax(0,1fr) 96px}}
 @media(max-width:560px) and (max-height:680px){#universe{bottom:228px}.timeline{height:215px}.timeline-note #scale-note{display:none}.inspector{top:130px;bottom:105px}.support-popup{bottom:231px}}
+
+/* Fullscreen is an unobstructed scene with a timeline that opens on demand. */
+.timeline-toggle{display:none}
+.planet-label.selected{color:#fff;border:1px solid rgba(239,191,131,.43);background:rgba(17,25,37,.82);border-radius:999px;padding:5px 10px;text-shadow:0 1px 8px #000;box-shadow:0 0 18px rgba(239,191,131,.16)}
+.cinema #app{height:100dvh;min-height:0}
+.cinema #universe{inset:0}
+.cinema #scene{inset:0}
+.cinema #labels,.cinema .scene-heading,.cinema .bodies,.cinema .view-options,.cinema .back-system,.cinema .inspector,.cinema .show-info,.cinema .scene-tools,.cinema .display-controls,.cinema .navigation-hint,.cinema .support-popup{display:none!important}
+.cinema .topbar{height:0;padding:0;background:none;border:0;pointer-events:none}
+.cinema .topbar .brand,.cinema .topbar .header-center,.cinema #help{display:none}
+.cinema .header-actions{position:fixed;top:max(12px,env(safe-area-inset-top));right:max(12px,env(safe-area-inset-right));pointer-events:auto}
+.cinema #fullscreen{width:40px;height:40px;color:#dce8f4;background:rgba(10,17,28,.48);border:1px solid rgba(188,207,232,.22);border-radius:50%;opacity:.55;transition:opacity .2s}
+.cinema #fullscreen:hover,.cinema #fullscreen:focus-visible{opacity:1}
+.cinema .timeline{bottom:max(12px,env(safe-area-inset-bottom));left:50%;right:auto;transform:translateX(-50%);width:auto;height:auto;min-width:0;padding:0;border-radius:999px;background:rgba(12,19,30,.72);box-shadow:0 12px 38px #0006;z-index:7}
+.cinema .timeline-toggle{display:flex;align-items:center;justify-content:center;gap:12px;min-height:42px;width:100%;padding:0 17px;color:#e9eff7;font-size:12px;letter-spacing:.06em;white-space:nowrap}
+.cinema .timeline-toggle>span:first-child{color:var(--accent);font-size:21px;line-height:1}
+.cinema .timeline-toggle .timeline-chevron{color:var(--accent);font-size:18px;line-height:1;transition:transform .2s}
+.cinema .timeline-top,.cinema .range-wrap,.cinema .timeline-note{display:none}
+.cinema.timeline-expanded .timeline{width:min(720px,calc(100vw - 24px));padding:0 18px 13px;border-radius:16px}
+.cinema.timeline-expanded .timeline-toggle{justify-content:flex-start;padding:0 2px}
+.cinema.timeline-expanded .timeline-chevron{margin-left:auto;transform:rotate(180deg)}
+.cinema.timeline-expanded .range-wrap{display:block;margin:2px 0 0}
+.cinema.timeline-expanded #time-slider{height:28px;touch-action:none}
+.cinema.timeline-expanded .year-labels{margin-top:0}
+.cinema.timeline-expanded .year-labels button{font-size:11px}
+@media(max-width:560px){.cinema.timeline-expanded .timeline{width:calc(100vw - 20px);padding:0 13px 11px}.cinema.timeline-expanded .year-labels button{font-size:10px}}
