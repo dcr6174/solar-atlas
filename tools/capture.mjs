@@ -36,7 +36,7 @@ try{
  await page.waitForTimeout(1000);await page.screenshot({path:'media/desktop.png'});
  await page.locator('#body-list [data-body="mars"]').click();await page.locator('#focus-body').click();await page.waitForTimeout(1100);
  await page.locator('#overview').click();await page.waitForTimeout(1100);
- await page.locator('#body-list [data-body="earth"]').click();if(await page.locator('#focus-body').isVisible())throw Error('Earth close-up button remains');
+ await page.locator('#body-list [data-body="earth"]').click();if(!await page.locator('#focus-body').isVisible())throw Error('Earth focus button is missing');await page.locator('#focus-body').click();if(!await page.locator('#back-system').isVisible())throw Error('Earth focus did not open');await page.locator('#back-system').click();
  if(await page.locator('#body-list [data-body="moon"]').count()!==0)throw Error('Moon should start hidden');
  await page.locator('#moon-toggle').check();await page.locator('#body-list [data-body="moon"]').click();
  if(!page.url().includes('body=moon'))throw Error('Moon selection is not shareable');
@@ -54,10 +54,10 @@ try{
  if(await small.locator('#earth-shortcut, #earth-surface, #earth-places').count())throw Error('Removed Earth controls remain on mobile');
  if(!await small.locator('#time-slider').isVisible()||!await small.locator('#body-list').isVisible())throw Error('Mobile timeline or planet selector is hidden');
  await small.locator('#body-list [data-body="earth"]').click();
- if(!await small.locator('#inspector').isVisible()||await small.locator('#focus-body').isVisible())throw Error('Mobile Earth details are incorrect');
+ if(!await small.locator('#inspector').isVisible()||!await small.locator('#focus-body').isVisible())throw Error('Mobile Earth focus button is missing');await small.locator('#focus-body').click();if(!await small.locator('#back-system').isVisible())throw Error('Mobile Earth focus did not open');
  if(await small.evaluate(()=>document.documentElement.scrollWidth>innerWidth))throw Error('Mobile layout overflows viewport');
  await small.locator('#body-list [data-body="moon"]').count().then(count=>{if(count)throw Error('Moon should also start hidden on mobile');});
- await small.locator('#close-info').click();await small.locator('#time-slider').press('Home');
+ await small.locator('#back-system').click();await small.locator('#show-info').click();await small.locator('#close-info').click();await small.locator('#time-slider').press('Home');
  if(!small.url().includes('date=10000-01-01-BCE')||await small.locator('#date-input').inputValue()!=='10000-01-01 BCE')throw Error('Mobile timeline and date are out of sync');
  await mobile.close();
 }finally{await browser.close();server.close();}

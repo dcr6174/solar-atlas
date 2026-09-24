@@ -52,7 +52,6 @@ function updateInspector(){
  else{const p=position(b,visualTime()),distance=Math.hypot(...p),period=b.period<1000?Math.round(b.period):+(b.period/365.25).toFixed(1),unit=b.period<1000?'days':'years';
  $('body-stats').innerHTML=stat('MEAN DIAMETER',b.diameter.toLocaleString('en-US'),'km')+stat('ORBITAL PERIOD',period,unit)+stat('FROM THE SUN',distance.toFixed(2),'AU')+stat('LIGHT TRAVEL',(distance*8.31675).toFixed(1),'min');}
  $('focus-body').innerHTML=icon('target')+(state.following===b.id?'Following '+b.name.replace('The ',''):'Explore up close')+'<span>↗</span>';
- $('focus-body').hidden=b.id==='earth';
 }
 function selectBody(id,{show=true}={}){
  if(!objects.has(id))throw new Error('Unknown celestial body.');
@@ -65,7 +64,7 @@ function selectBody(id,{show=true}={}){
 function makeBodyList(){
  $('body-count').textContent=(9+Number($('moon-toggle').checked)+Number($('pluto-toggle').checked))+' BODIES';
  $('body-list').innerHTML=bodies.filter(b=>optionalVisible(b.id)).map((b,i)=>`<button class="body-button${b.id===state.selected?' selected':''}" data-body="${b.id}" aria-pressed="${b.id===state.selected}" title="Select ${b.name}"><span class="body-dot" style="--body-color:${b.color}"></span><span>${b.name.replace('The ','')}</span><span class="body-order">${String(i).padStart(2,'0')}</span></button>`).join('');
- $('body-list').onclick=event=>{const button=event.target.closest('[data-body]');if(!button)return;selectBody(button.dataset.body);if(state.following){if(button.dataset.body==='earth')setView('overview');else focusBody(button.dataset.body);}};
+ $('body-list').onclick=event=>{const button=event.target.closest('[data-body]');if(!button)return;selectBody(button.dataset.body);if(state.following)focusBody(button.dataset.body);};
 }
 function updateDateUI(force=false){
  const label=formatDate(state.date),progress=timeToSlider(state.date);
@@ -161,7 +160,6 @@ function setView(mode='overview'){
 }
 function focusBody(id=state.selected){
  if(!objects.has(id))return;selectBody(id);const item=objects.get(id),b=item.body;
- if(id==='earth')return;
  const distance=b.radius*(id==='saturn'?10:7.5)*Math.max(1,1/camera.aspect);
  const offset=new THREE.Vector3(.55,.26,1).normalize().multiplyScalar(distance);
  flyTo(item.root.position,offset,id);state.view='focus';setActiveView(null);

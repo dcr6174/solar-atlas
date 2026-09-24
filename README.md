@@ -15,7 +15,7 @@ Desktop capture from the responsive interactive WebGL2 app:
 ## Explore
 
 - Drag, swipe, or use **W A S D** to rotate the camera; scroll or pinch to zoom. Click a body or choose it from the list.
-- Follow planets up close and switch between overview, inner planets, and top views. Earth's close-up and region selectors have been removed.
+- Follow the Sun and planets, including Earth, up close; switch between overview, inner planets, and top views. Earth uses the same follow controls as the other planets.
 - The desktop and mobile layouts adapt automatically to screen size. On mobile, the planet selector scrolls horizontally and details open as a compact panel.
 - Scrub calendar time from 10,000 BCE through 10,000 CE. Type a date such as `0044-03-15 BCE` or `10000-12-31 CE`. The slider moves in one-day steps and stays aligned with the date field. Play or reverse at adjustable speeds.
 - Copy the browser URL to share the selected body and date, for example [`#date=1969-07-20-CE&body=earth`](https://dcr6174.github.io/solar-atlas/#date=1969-07-20-CE&body=earth).
