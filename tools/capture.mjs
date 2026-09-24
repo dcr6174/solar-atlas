@@ -35,13 +35,13 @@ try{
  await page.locator('#date-input').fill('1969-07-20 CE');await page.locator('#date-input').press('Tab');
  await page.waitForTimeout(1000);await page.screenshot({path:'media/desktop.png'});
  await page.locator('#fullscreen').click();
- if(!await page.evaluate(()=>Boolean(document.fullscreenElement))||await page.locator('.bodies').isVisible()||await page.locator('#time-slider').isVisible()||!await page.locator('#timeline-toggle').isVisible())throw Error('Desktop cinema view did not hide the interface');
+ if(!await page.evaluate(()=>document.documentElement.classList.contains('cinema'))||await page.locator('.bodies').isVisible()||await page.locator('#time-slider').isVisible()||!await page.locator('#timeline-toggle').isVisible())throw Error('Desktop cinema view did not hide the interface');
  await page.locator('#timeline-toggle').click();
  if(!await page.locator('#time-slider').isVisible()||await page.locator('#timeline-toggle').getAttribute('aria-expanded')!=='true')throw Error('Desktop cinema timeline did not expand');
  await page.locator('#time-slider').press('ArrowRight');
  if(await page.locator('#cinema-date').textContent()!==await page.locator('#date-input').inputValue())throw Error('Fullscreen date and slider are out of sync');
  await page.locator('#timeline-toggle').click();if(await page.locator('#time-slider').isVisible())throw Error('Desktop cinema timeline did not collapse');
- await page.locator('#fullscreen').click();if(await page.evaluate(()=>Boolean(document.fullscreenElement))||!await page.locator('.bodies').isVisible())throw Error('Desktop interface did not return');
+ await page.locator('#fullscreen').click();if(await page.evaluate(()=>document.documentElement.classList.contains('cinema'))||!await page.locator('.bodies').isVisible())throw Error('Desktop interface did not return');
  await page.locator('#body-list [data-body="mars"]').click();await page.locator('#focus-body').click();await page.waitForTimeout(1100);
  await page.locator('#overview').click();await page.waitForTimeout(1100);
  await page.locator('#body-list [data-body="earth"]').click();if(!await page.locator('#focus-body').isVisible())throw Error('Earth focus button is missing');await page.locator('#focus-body').click();if(!await page.locator('#back-system').isVisible())throw Error('Earth focus did not open');await page.locator('#back-system').click();
@@ -62,7 +62,7 @@ try{
  if(await small.locator('#earth-shortcut, #earth-surface, #earth-places').count())throw Error('Removed Earth controls remain on mobile');
  if(!await small.locator('#time-slider').isVisible()||!await small.locator('#body-list').isVisible())throw Error('Mobile timeline or planet selector is hidden');
  await small.locator('#fullscreen').click();
- if(!await small.evaluate(()=>Boolean(document.fullscreenElement))||await small.locator('#body-list').isVisible()||!await small.locator('#timeline-toggle').isVisible())throw Error('Mobile cinema view did not hide the interface');
+ if(!await small.evaluate(()=>document.documentElement.classList.contains('cinema'))||await small.locator('#body-list').isVisible()||!await small.locator('#timeline-toggle').isVisible())throw Error('Mobile cinema view did not hide the interface');
  await small.locator('#timeline-toggle').click();if(!await small.locator('#time-slider').isVisible())throw Error('Mobile cinema timeline did not expand');
  await small.locator('#fullscreen').click();if(!await small.locator('#body-list').isVisible())throw Error('Mobile interface did not return');
  await small.locator('#body-list [data-body="earth"]').click();
