@@ -73,7 +73,6 @@ function updateDateUI(force=false){
  if(force||document.activeElement!==$('date-input'))$('date-input').value=label;
  $('time-slider').value=progress;$('time-slider').style.setProperty('--progress',progress/TOTAL_DAYS*100+'%');
  $('time-slider').setAttribute('aria-valuetext',label);
- $('cinema-date').textContent=label;
  $('back-day').disabled=state.date<=MIN_DATE;$('next-day').disabled=state.date>=MAX_DATE;
  const valid=state.date>=JPL_MIN&&state.date<=JPL_MAX;
  $('era-status').textContent=valid?'JPL approximate orbits':'Illustrative orbits · outside JPL dates';
@@ -237,10 +236,17 @@ function connectUI(){
  $('stars-toggle').onchange=()=>starField.visible=$('stars-toggle').checked;
  $('labels-toggle').onchange=()=>updateLabels();
  $('scale-mode').onchange=()=>setScale($('scale-mode').value);
- const setTimelineExpanded=open=>{const expanded=Boolean(open&&document.documentElement.classList.contains('cinema'));document.documentElement.classList.toggle('timeline-expanded',expanded);$('timeline-toggle').setAttribute('aria-expanded',String(expanded));$('timeline-toggle').setAttribute('aria-label',expanded?'Collapse timeline':'Expand timeline');};
- const setCinema=active=>{document.documentElement.classList.toggle('cinema',active);$('fullscreen').setAttribute('aria-label',active?'Exit fullscreen':'Enter fullscreen');$('fullscreen').title=active?'Exit fullscreen':'Fullscreen';setTimelineExpanded(false);if(active&&$('support-card'))$('support-card').hidden=true;resize();};
+ let autoStartedCinema=false,preCinemaSpeed=state.speed;
+ const setCinema=active=>{
+  const wasActive=document.documentElement.classList.contains('cinema');
+  if(active===wasActive)return;
+  document.documentElement.classList.toggle('cinema',active);
+  $('fullscreen').setAttribute('aria-label',active?'Exit fullscreen':'Enter fullscreen');$('fullscreen').title=active?'Exit fullscreen':'Fullscreen';
+  if(active){autoStartedCinema=!state.playing;if(autoStartedCinema){preCinemaSpeed=state.speed;state.speed=10;$('speed').value='10';if((state.date>=MAX_DATE&&state.direction>0)||(state.date<=MIN_DATE&&state.direction<0))setDirection(-state.direction);setPlaying(true);}if($('support-card'))$('support-card').hidden=true;}
+  else if(autoStartedCinema){setPlaying(false);state.speed=preCinemaSpeed;$('speed').value=String(preCinemaSpeed);autoStartedCinema=false;}
+  resize();
+ };
  $('fullscreen').onclick=async()=>{if(document.documentElement.classList.contains('cinema')){setCinema(false);if(document.fullscreenElement)await document.exitFullscreen().catch(()=>{});return;}setCinema(true);if(document.documentElement.requestFullscreen)await document.documentElement.requestFullscreen().catch(()=>{});};
- $('timeline-toggle').onclick=()=>setTimelineExpanded(!document.documentElement.classList.contains('timeline-expanded'));
  document.addEventListener('fullscreenchange',()=>{if(document.fullscreenElement)setCinema(true);else if(document.documentElement.classList.contains('cinema'))setCinema(false);});
  const openGuide=()=>{setPlaying(false);$('guide').showModal();};$('help').onclick=openGuide;$('model-info').onclick=openGuide;$('close-guide').onclick=()=>$('guide').close();
  $('guide').addEventListener('click',event=>{if(event.target===$('guide')){const box=$('guide').getBoundingClientRect();if(event.clientX<box.left||event.clientX>box.right||event.clientY<box.top||event.clientY>box.bottom)$('guide').close();}});
