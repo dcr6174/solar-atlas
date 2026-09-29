@@ -10,7 +10,7 @@ const server=createServer(async(req,res)=>{try{const relative=normalize(decodeUR
 await new Promise(resolve=>server.listen(8080,'127.0.0.1',resolve));await mkdir('media',{recursive:true});
 const browser=await chromium.launch({headless:true,args:['--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader','--disable-dev-shm-usage']});
 try{
- const desktop=await browser.newContext({viewport:{width:1440,height:900},deviceScaleFactor:1,recordVideo:{dir:'media',size:{width:1280,height:800}}});
+ const desktop=await browser.newContext({viewport:{width:1440,height:900},deviceScaleFactor:1});
  const page=await desktop.newPage();await page.goto('http://127.0.0.1:8080/#date=1969-07-20&body=earth');
  await page.locator('#loading').waitFor({state:'hidden',timeout:30000});
  if(await page.locator('#webgl-error').isVisible()||await page.locator('canvas').count()===0)throw Error('WebGL2 did not initialize; refusing to publish misleading captures');
@@ -36,6 +36,7 @@ try{
  await page.waitForTimeout(1000);await page.screenshot({path:'media/desktop.png'});
  await page.locator('#fullscreen').click();
  if(!await page.evaluate(()=>document.documentElement.classList.contains('cinema'))||await page.locator('.bodies').isVisible()||await page.locator('.timeline').isVisible()||await page.locator('#play-state').textContent()!=='PLAYING'||await page.locator('#speed').inputValue()!=='10')throw Error('Desktop cinema did not hide controls and start at 10 days per second');
+ await page.waitForTimeout(700);await page.screenshot({path:'media/fullscreen.png'});
  await page.locator('#fullscreen').click();if(await page.evaluate(()=>document.documentElement.classList.contains('cinema'))||!await page.locator('.timeline').isVisible()||await page.locator('#play-state').textContent()!=='PAUSED')throw Error('Desktop view did not restore the paused timeline');
  await page.locator('#speed').selectOption('365.25');await page.locator('#play').click();await page.locator('#fullscreen').click();
  if(await page.locator('.timeline').isVisible()||await page.locator('#speed').inputValue()!=='365.25'||await page.locator('#play-state').textContent()!=='PLAYING')throw Error('Fullscreen did not preserve existing playback');
@@ -49,7 +50,7 @@ try{
  await page.locator('#moon-toggle').uncheck();
  if(await page.locator('#body-list [data-body="moon"]').count()!==0||page.url().includes('body=moon'))throw Error('Moon toggle did not hide the Moon');
  await page.locator('#play').click();await page.waitForTimeout(1600);await page.locator('#play').click();
- const video=await page.video().path();await desktop.close();await copyFile(video,'media/demo.webm');
+ await desktop.close();
  const mobile=await browser.newContext({viewport:{width:390,height:844},deviceScaleFactor:1,isMobile:true,hasTouch:true});
  const small=await mobile.newPage();await small.goto('http://127.0.0.1:8080/#date=1989-08-25&body=neptune');await small.locator('#loading').waitFor({state:'hidden',timeout:30000});
  if(await small.locator('#webgl-error').isVisible()||await small.locator('canvas').count()===0)throw Error('Mobile WebGL2 did not initialize');
@@ -66,7 +67,18 @@ try{
  if(!await small.locator('#inspector').isVisible()||!await small.locator('#focus-body').isVisible())throw Error('Mobile Earth focus button is missing');await small.locator('#focus-body').click();if(!await small.locator('#back-system').isVisible())throw Error('Mobile Earth focus did not open');
  if(await small.evaluate(()=>document.documentElement.scrollWidth>innerWidth))throw Error('Mobile layout overflows viewport');
  await small.locator('#body-list [data-body="moon"]').count().then(count=>{if(count)throw Error('Moon should also start hidden on mobile');});
- await small.locator('#back-system').click();await small.locator('#show-info').click();await small.locator('#close-info').click();await small.locator('#time-slider').press('Home');
+ await small.locator('#back-system').click();await small.locator('#show-info').click();await small.waitForTimeout(700);await small.screenshot({path:'media/mobile.png'});await small.locator('#close-info').click();await small.locator('#time-slider').press('Home');
  if(!small.url().includes('date=10000-01-01-BCE')||await small.locator('#date-input').inputValue()!=='10000-01-01 BCE')throw Error('Mobile timeline and date are out of sync');
  await mobile.close();
+ // Record a short product walkthrough separately from the validation sequence.
+ const tour=await browser.newContext({viewport:{width:1440,height:900},deviceScaleFactor:1,recordVideo:{dir:'media',size:{width:1280,height:800}}});
+ const demo=await tour.newPage();await demo.goto('http://127.0.0.1:8080/#date=1969-07-20-CE&body=earth');
+ await demo.locator('#loading').waitFor({state:'hidden',timeout:30000});
+ if(await demo.locator('#webgl-error').isVisible())throw Error('Demo cannot render WebGL2');
+ await demo.waitForTimeout(2300);
+ await demo.locator('#focus-body').click();await demo.waitForTimeout(3300);
+ await demo.locator('#fullscreen').click();
+ if(await demo.locator('.timeline').isVisible()||await demo.locator('#play-state').textContent()!=='PLAYING')throw Error('Demo fullscreen playback failed');
+ await demo.waitForTimeout(3300);await demo.locator('#fullscreen').click();await demo.waitForTimeout(1300);
+ const video=await demo.video().path();await tour.close();await copyFile(video,'media/demo.webm');
 }finally{await browser.close();server.close();}
