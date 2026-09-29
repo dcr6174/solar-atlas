@@ -1,16 +1,20 @@
 # Solar Atlas
 
-Explore the solar system in 3D, from **10,000 BCE to 10,000 CE**. Follow the eight planets, optionally show Earth's Moon and Pluto, and explore the solar system on desktop or mobile.
+An interactive 3D solar system and time explorer. Follow the eight planets, move through dates from **10,000 BCE to 10,000 CE**, and switch to an immersive fullscreen view.
 
-[**Open Solar Atlas**](https://dcr6174.github.io/solar-atlas/) · [Support the project](https://buymeacoffee.com/dcr6174)
+[**Launch the interactive demo**](https://dcr6174.github.io/solar-atlas/) · [Watch the short demo](media/demo.webm) · [View the source](https://github.com/dcr6174/solar-atlas)
 
-## Screenshots and recording
+[![Solar Atlas desktop overview with planet selector and time controls](media/desktop.png)](https://dcr6174.github.io/solar-atlas/)
 
-Desktop capture from the responsive interactive WebGL2 app:
+## See it in action
 
-![Desktop view of Solar Atlas, showing a 3D solar system and time controls](media/desktop.png)
+| Immersive view | Mobile layout |
+| --- | --- |
+| [![Fullscreen Solar Atlas view without the timeline](media/fullscreen.png)](media/fullscreen.png) | [![Solar Atlas mobile layout with planet selector and time controls](media/mobile.png)](media/mobile.png) |
 
-[Watch the short screen recording](media/demo.webm) · [Promotional social preview artwork](social-preview.jpg)
+**Try it:** Select Earth, choose **Explore up close**, then use the fullscreen button. Fullscreen hides the timeline and starts time at 10 days per second when playback was paused. If time is already playing, it continues at the selected speed. An immersive in-page view remains available when native fullscreen is unavailable.
+
+[Watch the short walkthrough](media/demo.webm) · [Support the project](https://buymeacoffee.com/dcr6174)
 
 ## Explore
 
