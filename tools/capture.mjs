@@ -75,10 +75,10 @@ try{
  const demo=await tour.newPage();await demo.goto('http://127.0.0.1:8080/#date=1969-07-20-CE&body=earth');
  await demo.locator('#loading').waitFor({state:'hidden',timeout:30000});
  if(await demo.locator('#webgl-error').isVisible())throw Error('Demo cannot render WebGL2');
- await demo.waitForTimeout(2300);
- await demo.locator('#focus-body').click();await demo.waitForTimeout(3300);
+ await demo.waitForTimeout(4500);
+ await demo.locator('#focus-body').click();await demo.waitForTimeout(5200);
  await demo.locator('#fullscreen').click();
  if(await demo.locator('.timeline').isVisible()||await demo.locator('#play-state').textContent()!=='PLAYING')throw Error('Demo fullscreen playback failed');
- await demo.waitForTimeout(3300);await demo.locator('#fullscreen').click();await demo.waitForTimeout(1300);
+ await demo.waitForTimeout(6500);await demo.locator('#fullscreen').click();await demo.waitForTimeout(2500);
  const video=await demo.video().path();await tour.close();await copyFile(video,'media/demo.webm');
 }finally{await browser.close();server.close();}
