@@ -165,7 +165,7 @@ function setView(mode='overview'){
  const offset=mode==='top'?new THREE.Vector3(0,distance,0.001):new THREE.Vector3(distance*.1,distance*.53,distance*.86);
  flyTo(new THREE.Vector3(),offset);setActiveView(mode==='inner'?'inner-view':mode==='top'?'top-view':'overview');
  $('scene-title').innerHTML=(mode==='inner'?'The inner worlds':'Our solar system')+'<span>.</span>';
- $('scene-subtitle').textContent=mode==='inner'?'Four rocky worlds. A closer perspective.':'8 planets. One extraordinary star.';
+ $('scene-subtitle').textContent=mode==='inner'?'Four rocky worlds. A closer perspective.':'Select a planet, travel through time, or enter fullscreen.';
  updateInspector();
 }
 function focusBody(id=state.selected){
